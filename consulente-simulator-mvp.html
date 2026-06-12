@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulente Simulator — L'Artigiano Prudente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ECE4D4;
+    --paper-2:#E3D9C5;
+    --card:#F4EEE0;
+    --ink:#2A2018;
+    --ink-soft:#5C5142;
+    --line:#CFC2A8;
+    --brass:#A9762B;
+    --brass-deep:#85561a;
+    --trust:#B8862F;
+    --open:#3E7C6D;
+    --press:#B4452F;
+    --good:#3E7C6D;
+    --bad:#B4452F;
+    --wood:#3a2c20;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 18% 12%, rgba(169,118,43,.06), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(62,124,109,.06), transparent 45%),
+      var(--paper);
+    min-height:100vh;
+    line-height:1.55;
+  }
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 20px 60px}
+
+  /* Header */
+  header.app{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;margin-bottom:22px;
+  }
+  .brand h1{
+    font-family:'Fraunces',serif;font-weight:600;
+    font-size:clamp(22px,3.4vw,32px);margin:0;letter-spacing:.2px;
+  }
+  .brand .sub{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2.5px;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:3px;
+  }
+  .progress{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+    text-align:right;
+  }
+  .progress b{color:var(--ink);font-weight:500}
+
+  /* Layout */
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+  @media (max-width:840px){.layout{grid-template-columns:1fr}}
+
+  /* Stage / conversation */
+  .stage{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:22px 24px;min-height:300px;
+  }
+  .phase-tag{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--brass-deep);
+    display:inline-block;border:1px solid var(--brass);border-radius:30px;
+    padding:3px 11px;margin-bottom:14px;background:rgba(169,118,43,.08);
+  }
+  .stage h2{font-family:'Fraunces',serif;font-weight:500;font-size:20px;margin:0 0 12px}
+
+  /* Client card */
+  .client{
+    display:flex;gap:14px;align-items:center;
+    border:1px solid var(--line);border-radius:10px;background:var(--paper-2);
+    padding:14px 16px;margin-bottom:18px;
+  }
+  .avatar{
+    width:54px;height:54px;border-radius:10px;flex:0 0 auto;
+    background:var(--wood);color:#e8d9bf;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-size:22px;font-weight:600;
+  }
+  .client .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px}
+  .client .role{font-size:12.5px;color:var(--ink-soft)}
+
+  /* Dialogue lines */
+  .dialogue{margin:6px 0 18px}
+  .line{margin:0 0 11px;animation:fade .4s ease}
+  .line.client-line{
+    background:var(--paper-2);border-left:3px solid var(--brass);
+    padding:10px 14px;border-radius:0 8px 8px 0;font-size:15px;
+  }
+  .line.client-line .who{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--brass-deep);display:block;margin-bottom:3px;
+  }
+  .line.me-line{
+    color:var(--ink-soft);font-size:14px;font-style:italic;padding:2px 4px 2px 14px;
+    border-left:3px solid var(--line);
+  }
+  .line.note{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--open);
+    padding:4px 4px;
+  }
+  .line.note.bad{color:var(--press)}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Choices */
+  .prompt-q{font-weight:600;font-size:15px;margin:18px 0 12px}
+  .choices{display:flex;flex-direction:column;gap:10px}
+  button.choice{
+    text-align:left;font-family:'Inter',sans-serif;font-size:14.5px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:9px;
+    padding:13px 15px;cursor:pointer;transition:.14s;line-height:1.45;
+  }
+  button.choice:hover{border-color:var(--brass);background:#fbf6ea;transform:translateX(2px)}
+  button.choice .cat{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:4px;
+  }
+  button.choice:disabled{opacity:.4;cursor:default;transform:none}
+
+  .btn-primary{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:14.5px;
+    background:var(--wood);color:#f0e3c9;border:none;border-radius:9px;
+    padding:13px 22px;cursor:pointer;transition:.15s;margin-top:6px;
+  }
+  .btn-primary:hover{background:#4d3b2b}
+  .btn-primary:disabled{opacity:.4;cursor:default}
+  .btn-ghost{
+    background:none;border:1px solid var(--line);color:var(--ink-soft);
+    font-family:'Inter',sans-serif;font-size:13px;border-radius:8px;
+    padding:9px 16px;cursor:pointer;
+  }
+  .btn-ghost:hover{border-color:var(--brass);color:var(--ink)}
+
+  /* Sidebar */
+  .side{display:flex;flex-direction:column;gap:16px}
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 16px;
+  }
+  .panel h3{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--brass-deep);margin:0 0 13px;
+    border-bottom:1px solid var(--line);padding-bottom:8px;
+  }
+  .stat{margin-bottom:13px}
+  .stat:last-child{margin-bottom:0}
+  .stat .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+  .stat .top .lbl{font-weight:500}
+  .stat .top .val{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft)}
+  .bar{height:9px;background:var(--paper-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .bar span{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+  .dossier-empty{font-size:12.5px;color:var(--ink-soft);font-style:italic}
+  .dossier-item{
+    font-size:12.5px;padding:8px 0;border-bottom:1px dashed var(--line);
+    display:flex;gap:8px;animation:fade .4s ease;
+  }
+  .dossier-item:last-child{border-bottom:none}
+  .dossier-item .ic{color:var(--brass);flex:0 0 auto;font-weight:600}
+  .need-item{
+    font-size:12.5px;padding:7px 0;border-bottom:1px dashed var(--line);
+    animation:fade .4s ease;
+  }
+  .need-item:last-child{border-bottom:none}
+  .need-item .crit{
+    font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;
+    color:var(--press);border:1px solid var(--press);border-radius:20px;
+    padding:1px 6px;margin-left:6px;text-transform:uppercase;
+  }
+  .need-item b{font-weight:600}
+
+  /* Proposal */
+  .prop-grid{display:flex;flex-direction:column;gap:10px;margin:6px 0 16px}
+  label.prop{
+    display:flex;gap:12px;align-items:flex-start;cursor:pointer;
+    border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--paper);
+    transition:.14s;
+  }
+  label.prop:hover{border-color:var(--brass)}
+  label.prop.on{border-color:var(--brass);background:#fbf6ea}
+  label.prop input{margin-top:3px;accent-color:var(--brass-deep);width:16px;height:16px}
+  label.prop .pname{font-weight:600;font-size:14.5px}
+  label.prop .pdesc{font-size:12.5px;color:var(--ink-soft)}
+
+  /* Result */
+  .verdict{text-align:center;padding:8px 0 4px}
+  .verdict .badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;display:inline-block;padding:5px 14px;border-radius:30px;margin-bottom:14px;
+  }
+  .verdict h2{font-family:'Fraunces',serif;font-weight:600;font-size:30px;margin:0 0 6px}
+  .verdict .score{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);font-size:13px}
+  .feedback{margin-top:18px}
+  .fb-block{
+    border-left:3px solid var(--line);padding:6px 0 6px 14px;margin-bottom:12px;font-size:14px;
+  }
+  .fb-block.good{border-color:var(--good)}
+  .fb-block.bad{border-color:var(--bad)}
+  .fb-block .h{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+  .fb-block.good .h{color:var(--good)}
+  .fb-block.bad .h{color:var(--bad)}
+  .center{text-align:center;margin-top:20px}
+
+  .meta-foot{
+    margin-top:28px;text-align:center;font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;letter-spacing:1.5px;color:var(--ink-soft);text-transform:uppercase;
+  }
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <h1>Consulente Simulator</h1>
+      <div class="sub">MVP · L'Artigiano Prudente</div>
+    </div>
+    <div class="progress" id="progress">Turno —/8</div>
+  </header>
+
+  <div class="layout">
+    <!-- Conversation stage -->
+    <main class="stage" id="stage"></main>
+
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="panel">
+        <h3>Stato del cliente</h3>
+        <div class="stat">
+          <div class="top"><span class="lbl">Fiducia</span><span class="val" id="v-fiducia">30</span></div>
+          <div class="bar"><span id="b-fiducia" style="background:var(--trust)"></span></div>
+        </div>
+        <div class="stat">
+          <div class="top"><span class="lbl">Apertura</span><span class="val" id="v-apertura">20</span></div>
+          <div class="bar"><span id="b-apertura" style="background:var(--open)"></span></div>
+        </div>
+        <div class="stat">
+          <div class="top"><span class="lbl">Pressione</span><span class="val" id="v-pressione">8</span></div>
+          <div class="bar"><span id="b-pressione" style="background:var(--press)"></span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Dossier · cosa hai scoperto</h3>
+        <div id="dossier"><p class="dossier-empty">Nessuna informazione raccolta. Fai le domande giuste.</p></div>
+      </div>
+
+      <div class="panel">
+        <h3>Bisogni individuati</h3>
+        <div id="needs"><p class="dossier-empty">Ancora nessun bisogno emerso.</p></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="meta-foot">Le domande costruiscono fiducia · la fiducia apre il cliente · l'ascolto svela i bisogni</div>
+</div>
+
+<script>
+/* ====================== STATO ====================== */
+const START = {fiducia:30, apertura:20, pressione:8};
+let S = {...START};
+let discovered = new Set();
+let needs = new Set();
+let proposalChoice = new Set();
+let turn = 0;
+
+const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+
+/* ====================== DATI: INFO & BISOGNI ====================== */
+const INFO = {
+  lavoro:  {ic:'✦', text:"Titolare di una piccola falegnameria artigiana. Lavora quasi sempre da solo."},
+  reddito: {ic:'✦', text:"Reddito legato alle commesse: mesi ottimi alternati a mesi quasi vuoti."},
+  famiglia:{ic:'✦', text:"Sposato con Anna. Due figli: Luca (17) e Sofia (14)."},
+  amico:   {ic:'✦', text:"Un collega falegname si è fatto male alla schiena: sei mesi fermo, zero entrate."},
+  risparmi:{ic:'✦', text:"Qualcosa da parte c'è, ma è fermo e immobile sul conto corrente."},
+  pensione:{ic:'✦', text:"Diffida della pensione: «da artigiano prenderò una miseria»."},
+  figli:   {ic:'✦', text:"Il sogno è far studiare i figli all'università, anche fuori sede."},
+};
+
+// Un bisogno emerge quando TUTTE le info richieste sono note (logica 'req'),
+// dove ogni elemento di 'req' è soddisfatto se ALMENO una delle sue info è nota.
+const NEEDS = {
+  infortuni:{label:"Protezione infortuni / inabilità", crit:true,
+    req:[['lavoro'], ['amico','reddito']]},
+  previdenza:{label:"Previdenza integrativa", crit:false,
+    req:[['pensione']]},
+  risparmio:{label:"Risparmio / Investimento", crit:false,
+    req:[['risparmi']]},
+  famiglia_tutela:{label:"Tutela e studio dei figli", crit:false,
+    req:[['figli'], ['famiglia']]},
+};
+
+const PROPOSALS = {
+  p_infortuni:{need:'infortuni', name:"Polizza infortuni e inabilità lavorativa",
+    desc:"Indennizzo e rendita se un infortunio lo tiene fermo dal lavoro."},
+  p_previdenza:{need:'previdenza', name:"Piano previdenziale integrativo (PIP)",
+    desc:"Versamenti flessibili per una pensione più dignitosa."},
+  p_risparmio:{need:'risparmio', name:"Piano di risparmio / investimento",
+    desc:"Far lavorare la liquidità ferma sul conto."},
+  p_famiglia:{need:'famiglia_tutela', name:"Soluzione dedicata allo studio dei figli",
+    desc:"Capitale accantonato per l'università di Luca e Sofia."},
+};
+
+/* ====================== TURNI ====================== */
+const TURNS = [
+  /* ---- T1: APERTURA ---- */
+  {
+    phase:"Fase 1 · Apertura",
+    title:"Il primo contatto",
+    intro:[
+      {who:'client', t:"Buongiorno. Mi hanno detto che dovevamo vederci... ho mezz'ora, non di più. Mi dica pure."}
+    ],
+    q:"Come apri il colloquio?",
+    options:[
+      {cat:"Relazione", said:"\"Si metta comodo, intanto. Mi racconti un po' lei: di cosa si occupa?\"",
+        d:{fiducia:8, apertura:10, pressione:-2}, reveal:['lavoro'],
+        reply:"Beh... ho una falegnameria, piccola roba. Lavoro su misura, da solo per lo più. Mio padre faceva lo stesso mestiere."},
+      {cat:"Vendita diretta", said:"\"Le ho già preparato tre soluzioni molto vantaggiose. Andiamo dritti al punto.\"",
+        d:{fiducia:-10, apertura:-8, pressione:20}, reveal:[],
+        reply:"Ecco, lo sapevo. Senta, di gente che mi vende cose ne ho già abbastanza. Faccia in fretta."},
+      {cat:"Rispetto", said:"\"So che è una persona pratica e che il suo tempo vale. Parta lei: da dove vuole cominciare?\"",
+        d:{fiducia:5, apertura:5, pressione:0}, reveal:['lavoro'],
+        reply:"Pratico sì. Faccio il falegname, lavoro da solo nella mia bottega. Dunque non mi giri troppo intorno."},
+    ]
+  },
+  /* ---- T2: LAVORO / REDDITO ---- */
+  {
+    phase:"Fase 2 · Analisi dei bisogni",
+    title:"Capire il lavoro",
+    q:"Su cosa indaghi?",
+    options:[
+      {cat:"Lavoro", said:"\"Come gira il lavoro? Le commesse sono costanti durante l'anno?\"",
+        d:{fiducia:4, apertura:6, pressione:0}, reveal:['reddito'],
+        reply:"Magari fossero costanti. Ci sono mesi che non mi fermo e mesi che guardo il soffitto. È così, è il mestiere."},
+      {cat:"Patrimonio", said:"\"Quanto fattura all'anno, all'incirca?\"",
+        gate:{stat:'apertura', min:45},
+        d:{fiducia:1, apertura:1, pressione:0}, reveal:['reddito'],
+        reply:"Numeri precisi non gliene do, ma le dico la verità: è un reddito ballerino, su e giù.",
+        fail:{ d:{fiducia:-4, apertura:0, pressione:12}, reveal:[],
+          reply:"Eh, piano. Ci conosciamo da cinque minuti e già mi chiede quanto guadagno?"}},
+      {cat:"Vendita", said:"\"Immagino guadagni bene: gli artigiani non si lamentano mai per davvero.\"",
+        d:{fiducia:-6, apertura:-2, pressione:10}, reveal:[],
+        reply:"Senta, non sa di cosa parla. Non si lamenta chi non vede i conti a fine mese."},
+    ]
+  },
+  /* ---- T3: FAMIGLIA ---- */
+  {
+    phase:"Fase 3 · Analisi dei bisogni",
+    title:"La famiglia",
+    q:"Come prosegui?",
+    options:[
+      {cat:"Famiglia", said:"\"Mi parla un po' di chi ha a casa? Famiglia, figli?\"",
+        d:{fiducia:6, apertura:6, pressione:-1}, reveal:['famiglia'],
+        reply:"C'è mia moglie Anna, e due ragazzi: Luca che fa diciassette anni e Sofia, quattordici. Sono la mia spinta, quelli."},
+      {cat:"Famiglia", said:"\"Ha persone a carico che le pesano sul bilancio?\"",
+        gate:{stat:'apertura', min:38},
+        d:{fiducia:2, apertura:2, pressione:0}, reveal:['famiglia'],
+        reply:"\"Pesano\" non è la parola che userei. Ho moglie e due figli. Per loro faccio tutto.",
+        fail:{ d:{fiducia:-3, apertura:0, pressione:8}, reveal:[],
+          reply:"Che domanda è? La mia famiglia non è un peso. Cambiamo discorso."}},
+      {cat:"Vendita", said:"\"Lasci stare la famiglia, parliamo di numeri e prodotti.\"",
+        d:{fiducia:-3, apertura:-6, pressione:4}, reveal:[],
+        reply:"Veramente la mia famiglia è il motivo per cui sono qui. Ma vada pure coi suoi numeri."},
+    ]
+  },
+  /* ---- T4: PROTEZIONE (snodo critico) ---- */
+  {
+    phase:"Fase 4 · Analisi dei bisogni",
+    title:"Il rischio sommerso",
+    q:"Qui si gioca molto. Cosa chiedi?",
+    options:[
+      {cat:"Protezione", said:"\"Lavorando da solo, si è mai chiesto cosa succederebbe se per un infortunio dovesse fermarsi qualche mese?\"",
+        gate:{stat:'apertura', min:40},
+        d:{fiducia:8, apertura:4, pressione:-2}, reveal:['amico'],
+        reply:"...Guardi, glielo dico perché me l'ha chiesto bene. Un amico, falegname pure lui, s'è rovinato la schiena. Sei mesi a casa. Niente lavoro, niente soldi. Ci penso, certe notti.",
+        fail:{ d:{fiducia:-2, apertura:0, pressione:6}, reveal:[],
+          reply:"A me non succede niente, sto attento. Non mi tiri iella, va'."}},
+      {cat:"Protezione", said:"\"Conosce qualcuno a cui è capitato un imprevisto sul lavoro?\"",
+        gate:{stat:'apertura', min:30},
+        d:{fiducia:5, apertura:3, pressione:0}, reveal:['amico'],
+        reply:"Sì, un collega. S'è fatto la schiena, fermo mezzo anno, senza un'entrata. Una brutta storia.",
+        fail:{ d:{fiducia:0, apertura:0, pressione:4}, reveal:[],
+          reply:"Mah. Sì, capita, ma non mi va di pensarci adesso."}},
+      {cat:"Vendita", said:"\"Ha già una polizza infortuni? Le mostro subito la nostra, è imbattibile.\"",
+        d:{fiducia:-6, apertura:-2, pressione:14}, reveal:[],
+        reply:"Ecco di nuovo il venditore. No, e non mi sento di firmare niente con uno che ho appena conosciuto."},
+    ]
+  },
+  /* ---- T5: PATRIMONIO / RISPARMIO ---- */
+  {
+    phase:"Fase 5 · Analisi dei bisogni",
+    title:"Il patrimonio",
+    q:"Cosa esplori?",
+    options:[
+      {cat:"Patrimonio", said:"\"Con un reddito così variabile, riesce comunque a mettere da parte qualcosa?\"",
+        d:{fiducia:4, apertura:4, pressione:0}, reveal:['risparmi'],
+        reply:"Qualcosa sì, quando il lavoro va. Ma sta lì, sul conto, ferma. Non saprei mai dove metterla, mi fido poco."},
+      {cat:"Patrimonio", said:"\"Dove tiene i risparmi? Sul conto perdono valore ogni anno, sa.\"",
+        gate:{stat:'apertura', min:42},
+        d:{fiducia:2, apertura:2, pressione:0}, reveal:['risparmi'],
+        reply:"Lo so che fermi non rendono. Sono sul conto, è vero. Ma muovere i soldi mi fa paura.",
+        fail:{ d:{fiducia:-3, apertura:0, pressione:8}, reveal:[],
+          reply:"E ridagli coi soldi. I miei risparmi stanno dove dico io."}},
+      {cat:"Vendita", said:"\"Le conviene investire subito, è il momento giusto sul mercato.\"",
+        d:{fiducia:-6, apertura:-2, pressione:12}, reveal:[],
+        reply:"Il momento giusto... me lo dicono tutti e poi vanno tutti male. Lasci perdere."},
+    ]
+  },
+  /* ---- T6: OBIETTIVI / PREVIDENZA ---- */
+  {
+    phase:"Fase 6 · Analisi dei bisogni",
+    title:"Guardare avanti",
+    q:"Ultima domanda d'ascolto. Cosa chiedi?",
+    options:[
+      {cat:"Obiettivi Futuri", said:"\"Quando pensa al futuro, suo e dei suoi figli, cos'è che la preoccupa di più?\"",
+        gate:{stat:'apertura', min:35},
+        d:{fiducia:8, apertura:6, pressione:-2}, reveal:['pensione','figli'],
+        reply:"Due cose. Che da artigiano la pensione sarà una miseria, e che vorrei poter mandare i ragazzi all'università senza spezzarmi la schiena. Ecco, lei m'ha fatto dire tutto.",
+        fail:{ d:{fiducia:3, apertura:2, pressione:0}, reveal:['figli'],
+          reply:"Boh, il futuro... vorrei che i ragazzi studiassero. Il resto si vedrà."}},
+      {cat:"Protezione", said:"\"Ha mai pensato a un fondo pensione integrativo per quando smetterà?\"",
+        gate:{stat:'apertura', min:30},
+        d:{fiducia:3, apertura:2, pressione:1}, reveal:['pensione'],
+        reply:"Ci ho pensato, sì. So che da artigiano prenderò poco. Mi spaventa, ma non ci ho mai messo mano.",
+        fail:{ d:{fiducia:0, apertura:0, pressione:5}, reveal:[],
+          reply:"La pensione è lontana, ho altro a cui pensare adesso."}},
+      {cat:"Vendita", said:"\"I figli si arrangeranno da grandi. Pensi prima a sé stesso.\"",
+        d:{fiducia:-8, apertura:-2, pressione:6}, reveal:[],
+        reply:"Si sbaglia di grosso. Io vivo per quei ragazzi. Mi sa che non ci siamo capiti."},
+    ]
+  },
+  /* ---- T7: OBIEZIONE ---- */
+  {
+    phase:"Fase 7 · Gestione delle obiezioni",
+    title:"Il dubbio",
+    intro:[
+      {who:'client', t:"Senta, sarò sincero. Il mio reddito è ballerino. Non voglio impegni fissi che un brutto mese non riesco a onorare. Mi è già successo di firmare cose e poi pentirmi."}
+    ],
+    q:"Come gestisci l'obiezione?",
+    options:[
+      {cat:"Empatia", said:"\"La capisco, ed è proprio per questo che pensiamo a soluzioni flessibili: versa quando il lavoro va, si può sospendere nei mesi vuoti. Prima viene la protezione, non l'impegno.\"",
+        d:{fiducia:10, apertura:4, pressione:-10}, reveal:[],
+        reply:"Ah. Questo... questo è ragionare. Se è flessibile è un altro paio di maniche."},
+      {cat:"Pressione", said:"\"Ma è una cifra piccola, neanche se ne accorge! Non può rinunciare per così poco.\"",
+        d:{fiducia:-10, apertura:-2, pressione:16}, reveal:[],
+        reply:"\"Neanche me ne accorgo\". Lei i miei mesi storti non li ha visti. Mi sta solo spingendo."},
+      {cat:"Onestà", said:"\"Ha ragione a essere prudente. Possiamo partire dall'essenziale e rivederci con calma tra qualche mese.\"",
+        d:{fiducia:6, apertura:2, pressione:-4}, reveal:[],
+        reply:"Ecco, questo mi piace. Senza fretta. Mi fido più di chi non ha fretta."},
+    ]
+  },
+];
+
+/* ====================== RENDERING ====================== */
+const stage = document.getElementById('stage');
+
+function renderStats(){
+  for(const k of ['fiducia','apertura','pressione']){
+    document.getElementById('v-'+k).textContent = S[k];
+    document.getElementById('b-'+k).style.width = S[k] + '%';
+  }
+}
+function renderDossier(){
+  const el = document.getElementById('dossier');
+  if(discovered.size===0){ el.innerHTML='<p class="dossier-empty">Nessuna informazione raccolta. Fai le domande giuste.</p>'; return; }
+  el.innerHTML = [...discovered].map(id=>
+    `<div class="dossier-item"><span class="ic">${INFO[id].ic}</span><span>${INFO[id].text}</span></div>`).join('');
+}
+function renderNeeds(){
+  const el = document.getElementById('needs');
+  if(needs.size===0){ el.innerHTML='<p class="dossier-empty">Ancora nessun bisogno emerso.</p>'; return; }
+  el.innerHTML = [...needs].map(id=>{
+    const n = NEEDS[id];
+    return `<div class="need-item"><b>${n.label}</b>${n.crit?'<span class="crit">critico</span>':''}</div>`;
+  }).join('');
+}
+function setProgress(){
+  document.getElementById('progress').innerHTML = `Turno <b>${Math.min(turn+1,8)}</b>/8`;
+}
+
+function recomputeNeeds(){
+  const fresh = [];
+  for(const id in NEEDS){
+    if(needs.has(id)) continue;
+    const ok = NEEDS[id].req.every(group => group.some(info => discovered.has(info)));
+    if(ok){ needs.add(id); fresh.push(id); }
+  }
+  return fresh;
+}
+
+function applyEffects(d){
+  S.fiducia = clamp(S.fiducia + (d.fiducia||0));
+  S.apertura = clamp(S.apertura + (d.apertura||0));
+  S.pressione = clamp(S.pressione + (d.pressione||0));
+}
+
+/* ====================== FLUSSO DI GIOCO ====================== */
+function startGame(){
+  S = {...START}; discovered = new Set(); needs = new Set();
+  proposalChoice = new Set(); turn = 0;
+  renderStats(); renderDossier(); renderNeeds();
+  showIntro();
+}
+
+function showIntro(){
+  setProgress();
+  stage.innerHTML = `
+    <span class="phase-tag">Preparazione</span>
+    <h2>L'Artigiano Prudente</h2>
+    <div class="client">
+      <div class="avatar">GM</div>
+      <div>
+        <div class="name">Giuseppe Marchetti, 48 anni</div>
+        <div class="role">Falegname artigiano · Belvedere Marittimo</div>
+      </div>
+    </div>
+    <p style="font-size:14.5px;color:var(--ink-soft);margin:0 0 8px">
+      Ti è arrivato un nuovo appuntamento. Le note del collega che te lo ha passato sono scarne:
+    </p>
+    <ul style="font-size:14px;color:var(--ink-soft);margin:0 0 18px;padding-left:18px;line-height:1.7">
+      <li>Diffidente verso chi vende. Si chiude se sente pressione.</li>
+      <li>Persona concreta, di poche parole. La fiducia se la deve guadagnare.</li>
+      <li>Nasconde più di quanto dice: tocca a te fargli le domande giuste.</li>
+    </ul>
+    <p style="font-size:13px;color:var(--ink-soft);font-style:italic;margin:0 0 18px">
+      Non devi vendere. Devi capire. Una proposta nata dall'ascolto vale più di mille spinte.
+    </p>
+    <button class="btn-primary" id="go">Entra nel colloquio →</button>
+  `;
+  document.getElementById('go').onclick = playTurn;
+}
+
+function playTurn(){
+  if(turn >= TURNS.length){ showProposal(); return; }
+  const T = TURNS[turn];
+  setProgress();
+
+  let intro = '';
+  if(T.intro){
+    intro = T.intro.map(l=>
+      l.who==='client'
+        ? `<div class="line client-line"><span class="who">Giuseppe</span>${l.t}</div>`
+        : `<div class="line note">${l.t}</div>`
+    ).join('');
+  }
+
+  stage.innerHTML = `
+    <span class="phase-tag">${T.phase}</span>
+    <h2>${T.title}</h2>
+    <div class="dialogue" id="dlg">${intro}</div>
+    <div class="prompt-q">${T.q}</div>
+    <div class="choices" id="choices"></div>
+  `;
+
+  const wrap = document.getElementById('choices');
+  T.options.forEach((opt, i)=>{
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.innerHTML = `<span class="cat">${opt.cat}</span>${opt.said}`;
+    b.onclick = ()=> resolveChoice(opt);
+    wrap.appendChild(b);
+  });
+}
+
+function resolveChoice(opt){
+  // gate?
+  let outcome = opt;
+  let gated = false;
+  if(opt.gate){
+    const passed = S[opt.gate.stat] >= opt.gate.min;
+    if(!passed){ outcome = opt.fail; gated = true; }
+  }
+
+  applyEffects(outcome.d);
+  (outcome.reveal||[]).forEach(id=> discovered.add(id));
+  const fresh = recomputeNeeds();
+
+  // disable choices
+  document.querySelectorAll('#choices .choice').forEach(b=> b.disabled=true);
+
+  const dlg = document.getElementById('dlg');
+  dlg.insertAdjacentHTML('beforeend', `<div class="line me-line">${opt.said}</div>`);
+  dlg.insertAdjacentHTML('beforeend', `<div class="line client-line"><span class="who">Giuseppe</span>${outcome.reply}</div>`);
+
+  // feedback note
+  let note = '';
+  if(gated){
+    note = `Hai toccato un tasto delicato troppo presto: l'apertura non era sufficiente. Pressione in salita.`;
+  } else if((outcome.reveal||[]).length){
+    note = `Hai sbloccato un'informazione: il dossier si aggiorna.`;
+  } else if((outcome.d.pressione||0) > 8){
+    note = `Suonava come una spinta di vendita: il cliente si irrigidisce.`;
+  }
+  if(note){
+    dlg.insertAdjacentHTML('beforeend',
+      `<div class="line note ${gated || (outcome.d.pressione||0)>8 ? 'bad':''}">▸ ${note}</div>`);
+  }
+  fresh.forEach(id=>{
+    dlg.insertAdjacentHTML('beforeend',
+      `<div class="line note">★ Bisogno individuato: <b>${NEEDS[id].label}</b>${NEEDS[id].crit?' (critico)':''}.</div>`);
+  });
+
+  renderStats(); renderDossier(); renderNeeds();
+
+  // next button
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary';
+  btn.style.marginTop = '16px';
+  turn++;
+  btn.textContent = (turn >= TURNS.length) ? 'Passa alla proposta →' : 'Continua →';
+  btn.onclick = ()=>{ (turn >= TURNS.length) ? showProposal() : playTurn(); };
+  stage.appendChild(btn);
+  stage.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ---- T8: PROPOSTA ---- */
+function showProposal(){
+  turn = 8; setProgress();
+  proposalChoice = new Set();
+
+  const needList = needs.size
+    ? [...needs].map(id=>`<b>${NEEDS[id].label}</b>`).join(', ')
+    : 'nessun bisogno chiaro emerso dal colloquio';
+
+  stage.innerHTML = `
+    <span class="phase-tag">Fase 8 · Proposta</span>
+    <h2>La proposta finale</h2>
+    <div class="line client-line"><span class="who">Giuseppe</span>Va bene. Mi dica allora: lei cosa pensa faccia al caso mio?</div>
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:14px 0 10px">
+      Dai tuoi appunti emergono questi bisogni: ${needList}.
+      Scegli con cura: <b>proponi solo ciò che hai davvero capito di lui</b>. Spingere soluzioni per bisogni mai emersi suona come una vendita al buio.
+    </p>
+    <div class="prop-grid" id="props"></div>
+    <button class="btn-primary" id="present" disabled>Presenta la proposta →</button>
+  `;
+
+  const grid = document.getElementById('props');
+  for(const pid in PROPOSALS){
+    const p = PROPOSALS[pid];
+    const lab = document.createElement('label');
+    lab.className = 'prop';
+    lab.innerHTML = `
+      <input type="checkbox" value="${pid}">
+      <span><span class="pname">${p.name}</span><br><span class="pdesc">${p.desc}</span></span>`;
+    const cb = lab.querySelector('input');
+    cb.onchange = ()=>{
+      if(cb.checked){ proposalChoice.add(pid); lab.classList.add('on'); }
+      else{ proposalChoice.delete(pid); lab.classList.remove('on'); }
+      document.getElementById('present').disabled = proposalChoice.size===0;
+    };
+    grid.appendChild(lab);
+  }
+  document.getElementById('present').onclick = showResult;
+}
+
+/* ====================== ESITO ====================== */
+function showResult(){
+  // --- punteggi ---
+  const selected = [...proposalChoice];
+  const selectedNeeds = selected.map(p=>PROPOSALS[p].need);
+  const matched = selectedNeeds.filter(n=> needs.has(n));
+  const mismatched = selectedNeeds.filter(n=> !needs.has(n));
+  const missed = [...needs].filter(n=> !selectedNeeds.includes(n));
+
+  // relazione
+  const relScore = clamp(S.fiducia*0.40 + S.apertura*0.30 + (100-S.pressione)*0.30);
+
+  // scoperta (pesata; infortuni vale di più)
+  const W = {infortuni:40, previdenza:20, risparmio:20, famiglia_tutela:20};
+  let discScore = 0;
+  needs.forEach(n=> discScore += W[n]||0);
+  discScore = clamp(discScore);
+
+  // proposta
+  let propScore = 100 - mismatched.length*30 - missed.length*15;
+  if(matched.length===0) propScore -= 25;
+  propScore = clamp(propScore);
+
+  const overall = Math.round(relScore*0.35 + discScore*0.35 + propScore*0.30);
+
+  const infortuniFound = needs.has('infortuni');
+  const infortuniProposed = matched.includes('infortuni');
+
+  // --- determina esito ---
+  let outcome, color, bg;
+  if(S.pressione >= 75 || S.fiducia <= 15){
+    outcome = "Cliente perso";
+    color='var(--bad)'; bg='rgba(180,69,47,.12)';
+  } else if(overall >= 80 && S.pressione <= 30 && needs.size >= 3 && infortuniProposed){
+    outcome = "Cliente fidelizzato";
+    color='var(--good)'; bg='rgba(62,124,109,.14)';
+  } else if(matched.length >= 2 && overall >= 65){
+    outcome = "Cross selling";
+    color='var(--good)'; bg='rgba(62,124,109,.12)';
+  } else if(matched.length >= 1 && overall >= 50){
+    outcome = "Vendita";
+    color='var(--good)'; bg='rgba(62,124,109,.10)';
+  } else if(overall >= 35 && S.fiducia >= 35){
+    outcome = "Appuntamento successivo";
+    color='var(--brass-deep)'; bg='rgba(169,118,43,.12)';
+  } else {
+    outcome = "Nessun accordo";
+    color='var(--ink-soft)'; bg='rgba(92,81,66,.10)';
+  }
+
+  // --- battuta di chiusura del cliente ---
+  const closing = {
+    "Cliente fidelizzato":"Sa una cosa? Lei non mi ha venduto niente. Mi ha capito. Da oggi il mio consulente è lei. E le mando pure mio cognato.",
+    "Cross selling":"Mi ha convinto su più fronti, e di solito sono uno difficile. Procediamo: di lei mi fido.",
+    "Vendita":"Va bene, su questo ci sto. Mi ha toccato il punto giusto. Procediamo con calma.",
+    "Appuntamento successivo":"Niente firme oggi, ma lei è una persona seria. Ci risentiamo, e nel frattempo ci penso.",
+    "Nessun accordo":"Guardi, oggi non firmo nulla. Non ho sentito che avesse capito davvero cosa mi serve.",
+    "Cliente perso":"Basta così. Mi sono sentito solo spinto, non ascoltato. Non se ne fa niente."
+  }[outcome];
+
+  // --- feedback ---
+  const fb = [];
+  if(infortuniFound)
+    fb.push(['good','Il bisogno critico','Hai fatto emergere il rischio più grave: un infortunio che lo lascerebbe senza reddito. È il cuore della sua situazione, e l\'hai colto.']);
+  else
+    fb.push(['bad','Il bisogno critico mancato','Non è mai emerso il rischio più importante: lavora da solo e un infortunio lo fermerebbe senza entrate. Senza scoprirlo, qualsiasi proposta resta superficiale.']);
+
+  if(needs.size >= 3)
+    fb.push(['good','Ascolto profondo',`Hai individuato ${needs.size} bisogni su 4. Hai costruito un quadro vero della persona prima di proporre.`]);
+  else if(needs.size >= 1)
+    fb.push(['bad','Ascolto incompleto',`Hai colto solo ${needs.size} bisogno/i. Diverse domande giuste sono rimaste inesplorate o fatte nel momento sbagliato.`]);
+  else
+    fb.push(['bad','Nessun ascolto','Sei arrivato alla proposta senza aver scoperto alcun bisogno reale. Le domande erano lì, andavano poste con più cura.']);
+
+  if(S.pressione >= 50)
+    fb.push(['bad','Troppa pressione',`La pressione è salita a ${S.pressione}: il cliente si è sentito spinto. Con un prudente come Giuseppe è quasi sempre fatale.`]);
+  else if(S.pressione <= 25 && S.fiducia >= 55)
+    fb.push(['good','Relazione solida',`Fiducia ${S.fiducia}, pressione contenuta a ${S.pressione}. Hai creato lo spazio perché si aprisse da solo.`]);
+
+  if(mismatched.length)
+    fb.push(['bad','Proposta al buio',`Hai proposto ${mismatched.length} soluzione/i per bisogni mai emersi nel colloquio. Suona come vendere a caso: erode la fiducia appena costruita.`]);
+  if(missed.length && matched.length)
+    fb.push(['bad','Occasione lasciata',`Avevi scoperto ${missed.length} bisogno/i che poi non hai trasformato in proposta.`]);
+  if(matched.length && !mismatched.length)
+    fb.push(['good','Proposta coerente','Ogni soluzione che hai messo sul tavolo nasce da qualcosa che lui ti aveva detto. È così che una consulenza diventa credibile.']);
+
+  setProgress();
+  stage.innerHTML = `
+    <div class="verdict">
+      <span class="badge" style="color:${color};background:${bg}">Esito del colloquio</span>
+      <h2 style="color:${color}">${outcome}</h2>
+      <div class="score">Valutazione consulenza: ${overall}/100 · Relazione ${relScore} · Ascolto ${discScore} · Proposta ${propScore}</div>
+    </div>
+    <div class="line client-line" style="margin-top:18px"><span class="who">Giuseppe</span>${closing}</div>
+    <div class="feedback">
+      ${fb.map(([k,h,t])=>`<div class="fb-block ${k}"><div class="h">${h}</div>${t}</div>`).join('')}
+    </div>
+    <div class="center">
+      <button class="btn-primary" id="again">Gioca un altro colloquio ↺</button>
+    </div>
+  `;
+  document.getElementById('again').onclick = startGame;
+  stage.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ====================== AVVIO ====================== */
+startGame();
+</script>
+</body>
+</html>
