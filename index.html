@@ -2,774 +2,603 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consulente Simulator — L'Artigiano Prudente</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Consulente Simulator — Antonio Greco (follow-up contestuale)</title>
 <style>
   :root{
-    --paper:#ECE4D4;
-    --paper-2:#E3D9C5;
-    --card:#F4EEE0;
-    --ink:#2A2018;
-    --ink-soft:#5C5142;
-    --line:#CFC2A8;
-    --brass:#A9762B;
-    --brass-deep:#85561a;
-    --trust:#B8862F;
-    --open:#3E7C6D;
-    --press:#B4452F;
-    --good:#3E7C6D;
-    --bad:#B4452F;
-    --wood:#3a2c20;
+    --bg:#eaeef2; --surface:#ffffff; --surface-2:#f5f8fa; --ink:#18242f; --muted:#5d6b7a;
+    --line:#dbe2e9; --primary:#0f766e; --primary-d:#0b5d56;
+    --c-fiducia:#0f766e; --c-apertura:#2563eb; --c-pressione:#dc2626; --c-consap:#7c3aed;
+    --good:#0f766e; --warn:#b45309; --bad:#dc2626;
+    --shadow:0 1px 2px rgba(20,40,60,.06),0 8px 24px rgba(20,40,60,.06);
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    font-family:'Inter',sans-serif;
-    color:var(--ink);
-    background:
-      radial-gradient(circle at 18% 12%, rgba(169,118,43,.06), transparent 45%),
-      radial-gradient(circle at 85% 80%, rgba(62,124,109,.06), transparent 45%),
-      var(--paper);
-    min-height:100vh;
-    line-height:1.55;
-  }
-  .wrap{max-width:1060px;margin:0 auto;padding:26px 20px 60px}
-
-  /* Header */
-  header.app{
-    display:flex;align-items:flex-end;justify-content:space-between;
-    gap:16px;flex-wrap:wrap;
-    border-bottom:2px solid var(--ink);
-    padding-bottom:14px;margin-bottom:22px;
-  }
-  .brand h1{
-    font-family:'Fraunces',serif;font-weight:600;
-    font-size:clamp(22px,3.4vw,32px);margin:0;letter-spacing:.2px;
-  }
-  .brand .sub{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2.5px;
-    text-transform:uppercase;color:var(--ink-soft);margin-top:3px;
-  }
-  .progress{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
-    text-align:right;
-  }
-  .progress b{color:var(--ink);font-weight:500}
-
-  /* Layout */
-  .layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
-  @media (max-width:840px){.layout{grid-template-columns:1fr}}
-
-  /* Stage / conversation */
-  .stage{
-    background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:22px 24px;min-height:300px;
-  }
-  .phase-tag{
-    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:2px;
-    text-transform:uppercase;color:var(--brass-deep);
-    display:inline-block;border:1px solid var(--brass);border-radius:30px;
-    padding:3px 11px;margin-bottom:14px;background:rgba(169,118,43,.08);
-  }
-  .stage h2{font-family:'Fraunces',serif;font-weight:500;font-size:20px;margin:0 0 12px}
-
-  /* Client card */
-  .client{
-    display:flex;gap:14px;align-items:center;
-    border:1px solid var(--line);border-radius:10px;background:var(--paper-2);
-    padding:14px 16px;margin-bottom:18px;
-  }
-  .avatar{
-    width:54px;height:54px;border-radius:10px;flex:0 0 auto;
-    background:var(--wood);color:#e8d9bf;
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Fraunces',serif;font-size:22px;font-weight:600;
-  }
-  .client .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px}
-  .client .role{font-size:12.5px;color:var(--ink-soft)}
-
-  /* Dialogue lines */
-  .dialogue{margin:6px 0 18px}
-  .line{margin:0 0 11px;animation:fade .4s ease}
-  .line.client-line{
-    background:var(--paper-2);border-left:3px solid var(--brass);
-    padding:10px 14px;border-radius:0 8px 8px 0;font-size:15px;
-  }
-  .line.client-line .who{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;
-    text-transform:uppercase;color:var(--brass-deep);display:block;margin-bottom:3px;
-  }
-  .line.me-line{
-    color:var(--ink-soft);font-size:14px;font-style:italic;padding:2px 4px 2px 14px;
-    border-left:3px solid var(--line);
-  }
-  .line.note{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--open);
-    padding:4px 4px;
-  }
-  .line.note.bad{color:var(--press)}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-
-  /* Choices */
-  .prompt-q{font-weight:600;font-size:15px;margin:18px 0 12px}
-  .choices{display:flex;flex-direction:column;gap:10px}
-  button.choice{
-    text-align:left;font-family:'Inter',sans-serif;font-size:14.5px;color:var(--ink);
-    background:var(--paper);border:1px solid var(--line);border-radius:9px;
-    padding:13px 15px;cursor:pointer;transition:.14s;line-height:1.45;
-  }
-  button.choice:hover{border-color:var(--brass);background:#fbf6ea;transform:translateX(2px)}
-  button.choice .cat{
-    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1.5px;
-    text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:4px;
-  }
-  button.choice:disabled{opacity:.4;cursor:default;transform:none}
-
-  .btn-primary{
-    font-family:'Inter',sans-serif;font-weight:600;font-size:14.5px;
-    background:var(--wood);color:#f0e3c9;border:none;border-radius:9px;
-    padding:13px 22px;cursor:pointer;transition:.15s;margin-top:6px;
-  }
-  .btn-primary:hover{background:#4d3b2b}
-  .btn-primary:disabled{opacity:.4;cursor:default}
-  .btn-ghost{
-    background:none;border:1px solid var(--line);color:var(--ink-soft);
-    font-family:'Inter',sans-serif;font-size:13px;border-radius:8px;
-    padding:9px 16px;cursor:pointer;
-  }
-  .btn-ghost:hover{border-color:var(--brass);color:var(--ink)}
-
-  /* Sidebar */
-  .side{display:flex;flex-direction:column;gap:16px}
-  .panel{
-    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 16px;
-  }
-  .panel h3{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;
-    text-transform:uppercase;color:var(--brass-deep);margin:0 0 13px;
-    border-bottom:1px solid var(--line);padding-bottom:8px;
-  }
-  .stat{margin-bottom:13px}
-  .stat:last-child{margin-bottom:0}
-  .stat .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
-  .stat .top .lbl{font-weight:500}
-  .stat .top .val{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft)}
-  .bar{height:9px;background:var(--paper-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
-  .bar span{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-
-  .dossier-empty{font-size:12.5px;color:var(--ink-soft);font-style:italic}
-  .dossier-item{
-    font-size:12.5px;padding:8px 0;border-bottom:1px dashed var(--line);
-    display:flex;gap:8px;animation:fade .4s ease;
-  }
-  .dossier-item:last-child{border-bottom:none}
-  .dossier-item .ic{color:var(--brass);flex:0 0 auto;font-weight:600}
-  .need-item{
-    font-size:12.5px;padding:7px 0;border-bottom:1px dashed var(--line);
-    animation:fade .4s ease;
-  }
-  .need-item:last-child{border-bottom:none}
-  .need-item .crit{
-    font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;
-    color:var(--press);border:1px solid var(--press);border-radius:20px;
-    padding:1px 6px;margin-left:6px;text-transform:uppercase;
-  }
-  .need-item b{font-weight:600}
-
-  /* Proposal */
-  .prop-grid{display:flex;flex-direction:column;gap:10px;margin:6px 0 16px}
-  label.prop{
-    display:flex;gap:12px;align-items:flex-start;cursor:pointer;
-    border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--paper);
-    transition:.14s;
-  }
-  label.prop:hover{border-color:var(--brass)}
-  label.prop.on{border-color:var(--brass);background:#fbf6ea}
-  label.prop input{margin-top:3px;accent-color:var(--brass-deep);width:16px;height:16px}
-  label.prop .pname{font-weight:600;font-size:14.5px}
-  label.prop .pdesc{font-size:12.5px;color:var(--ink-soft)}
-
-  /* Result */
-  .verdict{text-align:center;padding:8px 0 4px}
-  .verdict .badge{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;
-    text-transform:uppercase;display:inline-block;padding:5px 14px;border-radius:30px;margin-bottom:14px;
-  }
-  .verdict h2{font-family:'Fraunces',serif;font-weight:600;font-size:30px;margin:0 0 6px}
-  .verdict .score{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);font-size:13px}
-  .feedback{margin-top:18px}
-  .fb-block{
-    border-left:3px solid var(--line);padding:6px 0 6px 14px;margin-bottom:12px;font-size:14px;
-  }
-  .fb-block.good{border-color:var(--good)}
-  .fb-block.bad{border-color:var(--bad)}
-  .fb-block .h{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
-  .fb-block.good .h{color:var(--good)}
-  .fb-block.bad .h{color:var(--bad)}
-  .center{text-align:center;margin-top:20px}
-
-  .meta-foot{
-    margin-top:28px;text-align:center;font-family:'IBM Plex Mono',monospace;
-    font-size:10.5px;letter-spacing:1.5px;color:var(--ink-soft);text-transform:uppercase;
-  }
-  .hidden{display:none}
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+  .app{max-width:1080px;margin:0 auto;padding:0 0 40px}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(150%) blur(8px);
+    border-bottom:1px solid var(--line);padding:10px max(14px,env(safe-area-inset-left)) 10px max(14px,env(safe-area-inset-right))}
+  .topbar .row1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{font-weight:700;font-size:15px} .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+  .moves{font-size:12px;color:var(--muted)} .moves b{color:var(--ink)}
+  .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
+  .chip{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 8px}
+  .chip .h{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .chip .h b{font-size:13px;color:var(--ink)}
+  .chip .bar{height:5px;background:#e5ebf0;border-radius:4px;margin-top:5px;overflow:hidden}
+  .chip .bar i{display:block;height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px;padding:16px 14px 0}
+  @media(min-width:860px){.grid{grid-template-columns:1fr 320px}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)} .pad{padding:18px}
+  #convo{display:flex;flex-direction:column;gap:11px;max-height:44vh;overflow-y:auto;padding:4px 2px}
+  @media(min-width:860px){#convo{max-height:50vh}}
+  .msg{animation:fade .35s ease} @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .msg.client .who{font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .msg.client .txt{background:var(--surface-2);border:1px solid var(--line);border-radius:4px 13px 13px 13px;padding:11px 13px}
+  .msg.me{align-self:flex-end;max-width:88%} .msg.me .txt{background:var(--primary);color:#eafffb;border-radius:13px 13px 4px 13px;padding:10px 13px;font-size:14px}
+  .msg.cue{color:var(--muted);font-style:italic;font-size:13px;padding:0 6px}
+  .msg.sys{font-size:12.5px;color:var(--primary-d);background:#e7f3f1;border:1px solid #cfe8e3;border-radius:9px;padding:7px 11px}
+  .msg.sys.bad{color:#9a1d1d;background:#fbeaea;border-color:#f3cccc}
+  .msg.sys.need{color:#5b2da8;background:#f0eafb;border-color:#ddccf3}
+  .msg.sys.thread{color:#15803d;background:#e9f8ee;border-color:#c5ead2}
+  .tagrow{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  .ctag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:20px;background:#eef2f6;color:var(--muted)}
+  .status{display:flex;align-items:center;gap:10px;margin:14px 0 2px;flex-wrap:wrap}
+  .emo{font-size:12px;font-weight:700;padding:4px 11px;border-radius:30px;letter-spacing:.3px}
+  .status .cue-now{font-size:13px;color:var(--muted);font-style:italic}
+  .memline{font-size:11.5px;color:var(--muted);margin:0 0 12px;padding-left:2px}
+  .memline b{color:var(--primary-d);font-weight:600}
+  .qsec{margin-bottom:14px}
+  .qsec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:0 0 8px;display:flex;align-items:center;gap:7px}
+  .qsec-label.p1{color:var(--primary)} .qsec-label.p2{color:#1d4ed8} .qsec-label.p3{color:var(--muted)}
+  .qsec-label .desc{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+  .q-list{display:flex;flex-direction:column;gap:9px}
+  button.q{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:11px 13px;cursor:pointer;font:inherit;color:var(--ink);transition:.13s;line-height:1.4}
+  button.q:hover{border-color:var(--primary);background:var(--surface-2)}
+  button.q.p1{border-left:3px solid var(--primary)}
+  button.q.hot{border-left:3px solid var(--warn);background:#fffaf2}
+  button.q.bridge{border-left:3px solid #7c3aed}
+  button.q.bridge.on{background:#f7f3fe;border-color:#7c3aed}
+  .qsec-label.pb{color:#6d28d9}
+  .bridge-lead{font-size:11.5px;color:#6d28d9;margin:-2px 0 9px;font-style:italic}
+  .q .framing{font-size:12px;color:#5b3aa6;margin-top:6px;font-style:italic;line-height:1.4}
+  .b.ponte{background:#efe7fb;color:#6d28d9}
+  .q .badges{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+  .b{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:20px}
+  .b.cat{background:#eef2f6;color:var(--muted)}
+  .b.scoperta{background:#e7f0fb;color:#1d4ed8} .b.implicazione{background:#f0eafb;color:#6d28d9}
+  .b.relazione{background:#e7f3f1;color:var(--primary-d)} .b.vendita{background:#fbeaea;color:#b91c1c}
+  .q .qtext{font-size:14px} .q .origin{font-size:11px;color:var(--muted);margin-top:5px} .q .origin::before{content:"↳ "}
+  .btn{font:inherit;font-weight:600;border:none;border-radius:11px;padding:13px 18px;cursor:pointer;transition:.15s}
+  .btn.primary{background:var(--primary);color:#fff;width:100%} .btn.primary:hover{background:var(--primary-d)}
+  .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--muted);width:100%;margin-top:10px}
+  .btn.ghost:hover{border-color:var(--primary);color:var(--ink)}
+  .doss h4{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:7px}
+  .doss h4::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--primary)}
+  .doss .group{margin-bottom:18px} .doss .group:last-child{margin-bottom:0}
+  .doss .item{font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line)} .doss .item:last-child{border-bottom:none}
+  .doss .empty{font-size:12.5px;color:var(--muted);font-style:italic}
+  .doss .need{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)} .doss .need:last-child{border-bottom:none}
+  .doss .need.locked{color:var(--muted)} .need .tags{display:flex;gap:5px;flex-shrink:0}
+  .tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border-radius:20px}
+  .tag.disc{background:#e7f0fb;color:#1d4ed8} .tag.illum{background:#f0eafb;color:#6d28d9} .tag.crit{background:#fbeaea;color:#b91c1c}
+  label.prop{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:12px 13px;cursor:pointer;margin-bottom:9px;transition:.13s}
+  label.prop:hover{border-color:var(--primary)} label.prop.on{border-color:var(--primary);background:var(--surface-2)}
+  label.prop input{margin-top:2px;width:17px;height:17px;accent-color:var(--primary);flex-shrink:0}
+  label.prop .pn{font-weight:600;font-size:14px} label.prop .pd{font-size:12.5px;color:var(--muted)}
+  .verdict{text-align:center;padding:6px 0 2px}
+  .verdict .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 13px;border-radius:30px;margin-bottom:12px}
+  .verdict h2{font-size:26px;margin:0 0 4px} .verdict .sub{font-size:13px;color:var(--muted)}
+  .db-stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:18px 0}
+  @media(min-width:560px){.db-stats{grid-template-columns:repeat(3,1fr)}}
+  .db-stat .h{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px} .db-stat .h b{font-weight:700}
+  .db-stat .bar{height:7px;background:#e5ebf0;border-radius:5px;overflow:hidden} .db-stat .bar i{display:block;height:100%;border-radius:5px}
+  .db-stat .note{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .fb{border-left:3px solid var(--line);padding:3px 0 3px 13px;margin-bottom:11px;font-size:13.5px}
+  .fb.good{border-color:var(--good)} .fb.bad{border-color:var(--bad)} .fb.tip{border-color:var(--warn)}
+  .fb .t{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+  .fb.good .t{color:var(--good)} .fb.bad .t{color:var(--bad)} .fb.tip .t{color:var(--warn)}
+  .hr{height:1px;background:var(--line);margin:18px 0} h3.block{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px}
+  .intro h2{font-size:20px;margin:0 0 4px}
+  .intro .person{display:flex;gap:13px;align-items:center;margin:14px 0;padding:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px}
+  .avatar{width:52px;height:52px;border-radius:11px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex-shrink:0}
+  .intro ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px}
+  .lead{font-size:13.5px;color:var(--muted)} .hint{font-size:12px;color:var(--muted);margin-top:9px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="app">
-    <div class="brand">
-      <h1>Consulente Simulator</h1>
-      <div class="sub">MVP · L'Artigiano Prudente</div>
-    </div>
-    <div class="progress" id="progress">Turno —/8</div>
-  </header>
-
-  <div class="layout">
-    <!-- Conversation stage -->
-    <main class="stage" id="stage"></main>
-
-    <!-- Sidebar -->
-    <aside class="side">
-      <div class="panel">
-        <h3>Stato del cliente</h3>
-        <div class="stat">
-          <div class="top"><span class="lbl">Fiducia</span><span class="val" id="v-fiducia">30</span></div>
-          <div class="bar"><span id="b-fiducia" style="background:var(--trust)"></span></div>
-        </div>
-        <div class="stat">
-          <div class="top"><span class="lbl">Apertura</span><span class="val" id="v-apertura">20</span></div>
-          <div class="bar"><span id="b-apertura" style="background:var(--open)"></span></div>
-        </div>
-        <div class="stat">
-          <div class="top"><span class="lbl">Pressione</span><span class="val" id="v-pressione">8</span></div>
-          <div class="bar"><span id="b-pressione" style="background:var(--press)"></span></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h3>Dossier · cosa hai scoperto</h3>
-        <div id="dossier"><p class="dossier-empty">Nessuna informazione raccolta. Fai le domande giuste.</p></div>
-      </div>
-
-      <div class="panel">
-        <h3>Bisogni individuati</h3>
-        <div id="needs"><p class="dossier-empty">Ancora nessun bisogno emerso.</p></div>
-      </div>
-    </aside>
+<div class="app">
+  <div class="topbar">
+    <div class="row1"><div class="brand">Consulente Simulator <small>Ponti conversazionali · Antonio Greco</small></div><div class="moves" id="moves"></div></div>
+    <div class="stat-strip" id="strip"></div>
   </div>
-
-  <div class="meta-foot">Le domande costruiscono fiducia · la fiducia apre il cliente · l'ascolto svela i bisogni</div>
+  <div class="grid">
+    <div><div class="card pad" id="main"></div></div>
+    <div><div class="card pad doss" id="dossier"></div></div>
+  </div>
 </div>
 
 <script>
-/* ====================== STATO ====================== */
-const START = {fiducia:30, apertura:20, pressione:8};
-let S = {...START};
-let discovered = new Set();
-let needs = new Set();
-let proposalChoice = new Set();
-let turn = 0;
+"use strict";
+const MAX_MOVES = 12, SOGLIA_CONSAP = 50;
+const CHARGED = ["nostalgia","orgoglio","paura","preoccupazione"];
 
-const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+const CLIENTE = {
+  nome:"Antonio Greco", iniziali:"AG",
+  riga:"49 anni · Commerciante · Negozio di abbigliamento · Sposato, due figli",
+  statBase:{ fiducia:60, apertura:35, pressione:10, consapevolezza:5 },
+  visibili:["Cliente da 6 anni","Possiede una polizza RC Auto","Titolare di un'attività commerciale"]
+};
+function modifica(eff,q){ const e={...eff}; if((q.tipo==="relazione"||q.tipo==="scoperta")&&e.fiducia>0) e.fiducia=e.fiducia*0.7; return e; }
+function modConsap(base,q){ return q.target==="protezione_reddito"?base*0.6:base; }
 
-/* ====================== DATI: INFO & BISOGNI ====================== */
 const INFO = {
-  lavoro:  {ic:'✦', text:"Titolare di una piccola falegnameria artigiana. Lavora quasi sempre da solo."},
-  reddito: {ic:'✦', text:"Reddito legato alle commesse: mesi ottimi alternati a mesi quasi vuoti."},
-  famiglia:{ic:'✦', text:"Sposato con Anna. Due figli: Luca (17) e Sofia (14)."},
-  amico:   {ic:'✦', text:"Un collega falegname si è fatto male alla schiena: sei mesi fermo, zero entrate."},
-  risparmi:{ic:'✦', text:"Qualcosa da parte c'è, ma è fermo e immobile sul conto corrente."},
-  pensione:{ic:'✦', text:"Diffida della pensione: «da artigiano prenderò una miseria»."},
-  figli:   {ic:'✦', text:"Il sogno è far studiare i figli all'università, anche fuori sede."},
+  attivita:{cat:"Attività",liv:1,testo:"Manda avanti il negozio praticamente da solo: l'attività dipende quasi tutta da lui."},
+  famiglia:{cat:"Famiglia",liv:1,testo:"Sposato con Maria. Due figli: Marco (16) e Giulia (13)."},
+  liquidita:{cat:"Patrimonio",liv:2,testo:"Circa 90.000 € fermi e inutilizzati sul conto corrente."},
+  calo_vendite:{cat:"Attività",liv:2,testo:"Le vendite sono calate negli ultimi due anni. Lo vive con apprensione."},
+  no_previdenza:{cat:"Previdenza",liv:2,testo:"Nessun piano pensionistico: conta solo sull'INPS."},
+  paura_famiglia:{cat:"Protezione",liv:3,testo:"Teme di non garantire continuità economica alla famiglia se l'attività si fermasse."},
+  futuro_figli:{cat:"Obiettivi",liv:3,testo:"Sogna di far studiare i figli all'università. Il loro futuro lo preoccupa."}
+};
+const BISOGNI = {
+  protezione_reddito:{label:"Protezione del reddito",critico:true,peso:40,requisiti:[["attivita"],["calo_vendite","paura_famiglia"]]},
+  previdenza:{label:"Previdenza",critico:false,peso:20,requisiti:[["no_previdenza"]]},
+  risparmio_figli:{label:"Risparmio per i figli",critico:false,peso:20,requisiti:[["futuro_figli"]]},
+  investimento_liquidita:{label:"Investimento della liquidità",critico:false,peso:20,requisiti:[["liquidita"]]}
+};
+const ORDINE_BISOGNI = ["protezione_reddito","previdenza","risparmio_figli","investimento_liquidita"];
+const PROPOSTE = {
+  p_protezione:{bisogno:"protezione_reddito",nome:"Protezione del reddito / continuità d'impresa",desc:"Indennità e rendita se un imprevisto lo tiene lontano dall'attività.",pert:95,bonusInfo:"paura_famiglia",bonus:5},
+  p_vita_generica:{bisogno:"protezione_reddito",nome:"Polizza vita generica",desc:"Capitale ai beneficiari in caso di decesso.",pert:50},
+  p_previdenza:{bisogno:"previdenza",nome:"Piano previdenziale integrativo (PIP)",desc:"Versamenti flessibili per integrare la pensione INPS.",pert:90},
+  p_risparmio_figli:{bisogno:"risparmio_figli",nome:"Piano di accumulo per lo studio dei figli",desc:"Capitale costruito per tempo per l'università.",pert:90},
+  p_investimento:{bisogno:"investimento_liquidita",nome:"Investimento prudente della liquidità",desc:"Far lavorare i 90.000 € fermi con rischio contenuto.",pert:85},
+  p_investimento_aggr:{bisogno:"investimento_liquidita",nome:"Investimento azionario aggressivo",desc:"Massima esposizione ai mercati.",pert:30}
 };
 
-// Un bisogno emerge quando TUTTE le info richieste sono note (logica 'req'),
-// dove ogni elemento di 'req' è soddisfatto se ALMENO una delle sue info è nota.
-const NEEDS = {
-  infortuni:{label:"Protezione infortuni / inabilità", crit:true,
-    req:[['lavoro'], ['amico','reddito']]},
-  previdenza:{label:"Previdenza integrativa", crit:false,
-    req:[['pensione']]},
-  risparmio:{label:"Risparmio / Investimento", crit:false,
-    req:[['risparmi']]},
-  famiglia_tutela:{label:"Tutela e studio dei figli", crit:false,
-    req:[['figli'], ['famiglia']]},
-};
+/* ============================================================
+   GRAFO CONVERSAZIONALE — ogni risposta porta tag + emozione,
+   e genera follow-up (spawns) che hanno priorità sullo schermo.
+   ============================================================ */
+const DOMANDE = [
+  {id:"rel_saluto",cat:"Relazione",tipo:"relazione",requires:{opening:true},tags:["famiglia","attività"],emotion:null,spawns:["fam_chi"],
+   testo:"Buongiorno Antonio, che piacere rivederla. Come va, a parte il lavoro?",eff:{fiducia:4,apertura:6,pressione:-2},
+   reply:"Eh, si tira avanti. La famiglia bene. Il negozio... di quello magari parliamo."},
+  {id:"rel_storia",cat:"Relazione",tipo:"relazione",requires:{opening:true},tags:["eredità","orgoglio","attività"],emotion:"nostalgia",spawns:["fu_padre","fu_significato","fu_continuita"],
+   testo:"In sei anni non gliel'ho mai chiesto: come ha iniziato con il negozio?",eff:{fiducia:6,apertura:6,pressione:-2},
+   reply:"Era di mio padre, l'ho preso io a trent'anni. È più di un lavoro per me, capisce?"},
+  {id:"rel_negozio",cat:"Attività",tipo:"scoperta",requires:{opening:true},tags:["attività"],emotion:null,spawns:["fu_vendite","fu_solo"],rivela:["attivita"],
+   testo:"Mi racconti: come procede il negozio in questo periodo?",eff:{fiducia:2,apertura:5,pressione:0},
+   reply:"Lo mando avanti praticamente da solo. Mia moglie aiuta quando può, ma il grosso è sulle mie spalle."},
+  {id:"fam_chi",cat:"Famiglia",tipo:"scoperta",requires:{opening:true},tags:["famiglia","figli"],emotion:null,spawns:["fu_figli_studio","fu_figli_eta"],rivela:["famiglia"],
+   testo:"E la famiglia? I ragazzi crescono?",eff:{fiducia:3,apertura:4,pressione:0},
+   reply:"Marco sedici, Giulia tredici. Crescono in fretta... e crescono pure le spese!"},
 
-const PROPOSALS = {
-  p_infortuni:{need:'infortuni', name:"Polizza infortuni e inabilità lavorativa",
-    desc:"Indennizzo e rendita se un infortunio lo tiene fermo dal lavoro."},
-  p_previdenza:{need:'previdenza', name:"Piano previdenziale integrativo (PIP)",
-    desc:"Versamenti flessibili per una pensione più dignitosa."},
-  p_risparmio:{need:'risparmio', name:"Piano di risparmio / investimento",
-    desc:"Far lavorare la liquidità ferma sul conto."},
-  p_famiglia:{need:'famiglia_tutela', name:"Soluzione dedicata allo studio dei figli",
-    desc:"Capitale accantonato per l'università di Luca e Sofia."},
-};
+  /* follow-up da rel_storia */
+  {id:"fu_padre",cat:"Relazione",tipo:"relazione",requires:{asked:["rel_storia"]},tags:["eredità","famiglia","nostalgia"],emotion:"nostalgia",deepens:"nostalgia",spawns:[],
+   origin:"Ha nominato suo padre",testo:"Suo padre è ancora coinvolto, in qualche modo?",eff:{fiducia:5,apertura:4,pressione:-1},
+   reply:"È mancato cinque anni fa. Ma quando alzo la saracinesca, è un po' come tenerlo vivo."},
+  {id:"fu_significato",cat:"Relazione",tipo:"scoperta",requires:{asked:["rel_storia"]},tags:["orgoglio","attività","sacrificio","continuità"],emotion:"orgoglio",deepens:"orgoglio",spawns:["fu_continuita"],rivela:["attivita"],
+   origin:"Vuoi sapere cosa rappresenta per lui",testo:"Cosa rappresenta oggi quel negozio per lei?",eff:{fiducia:5,apertura:4,pressione:0},
+   reply:"Tutto. La mia famiglia mangia di questo. Ci ho messo trent'anni di vita, ogni giorno, da solo."},
+  {id:"fu_continuita",cat:"Protezione",tipo:"scoperta",requires:{asked:["rel_storia"]},tags:["continuità","figli","paura","futuro"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_se_manco","prot_implica_core"],rivela:["attivita","paura_famiglia"],
+   origin:"Ha parlato di eredità: e il futuro?",testo:"Ha mai pensato a chi lo porterà avanti, un domani?",eff:{fiducia:4,apertura:3,pressione:-1},
+   reply:"I figli, magari... ma è tutto sulle mie spalle. Se manco io il negozio chiude, e la famiglia... non lo so. Non ci voglio pensare."},
 
-/* ====================== TURNI ====================== */
-const TURNS = [
-  /* ---- T1: APERTURA ---- */
-  {
-    phase:"Fase 1 · Apertura",
-    title:"Il primo contatto",
-    intro:[
-      {who:'client', t:"Buongiorno. Mi hanno detto che dovevamo vederci... ho mezz'ora, non di più. Mi dica pure."}
-    ],
-    q:"Come apri il colloquio?",
-    options:[
-      {cat:"Relazione", said:"\"Si metta comodo, intanto. Mi racconti un po' lei: di cosa si occupa?\"",
-        d:{fiducia:8, apertura:10, pressione:-2}, reveal:['lavoro'],
-        reply:"Beh... ho una falegnameria, piccola roba. Lavoro su misura, da solo per lo più. Mio padre faceva lo stesso mestiere."},
-      {cat:"Vendita diretta", said:"\"Le ho già preparato tre soluzioni molto vantaggiose. Andiamo dritti al punto.\"",
-        d:{fiducia:-10, apertura:-8, pressione:20}, reveal:[],
-        reply:"Ecco, lo sapevo. Senta, di gente che mi vende cose ne ho già abbastanza. Faccia in fretta."},
-      {cat:"Rispetto", said:"\"So che è una persona pratica e che il suo tempo vale. Parta lei: da dove vuole cominciare?\"",
-        d:{fiducia:5, apertura:5, pressione:0}, reveal:['lavoro'],
-        reply:"Pratico sì. Faccio il falegname, lavoro da solo nella mia bottega. Dunque non mi giri troppo intorno."},
-    ]
-  },
-  /* ---- T2: LAVORO / REDDITO ---- */
-  {
-    phase:"Fase 2 · Analisi dei bisogni",
-    title:"Capire il lavoro",
-    q:"Su cosa indaghi?",
-    options:[
-      {cat:"Lavoro", said:"\"Come gira il lavoro? Le commesse sono costanti durante l'anno?\"",
-        d:{fiducia:4, apertura:6, pressione:0}, reveal:['reddito'],
-        reply:"Magari fossero costanti. Ci sono mesi che non mi fermo e mesi che guardo il soffitto. È così, è il mestiere."},
-      {cat:"Patrimonio", said:"\"Quanto fattura all'anno, all'incirca?\"",
-        gate:{stat:'apertura', min:45},
-        d:{fiducia:1, apertura:1, pressione:0}, reveal:['reddito'],
-        reply:"Numeri precisi non gliene do, ma le dico la verità: è un reddito ballerino, su e giù.",
-        fail:{ d:{fiducia:-4, apertura:0, pressione:12}, reveal:[],
-          reply:"Eh, piano. Ci conosciamo da cinque minuti e già mi chiede quanto guadagno?"}},
-      {cat:"Vendita", said:"\"Immagino guadagni bene: gli artigiani non si lamentano mai per davvero.\"",
-        d:{fiducia:-6, apertura:-2, pressione:10}, reveal:[],
-        reply:"Senta, non sa di cosa parla. Non si lamenta chi non vede i conti a fine mese."},
-    ]
-  },
-  /* ---- T3: FAMIGLIA ---- */
-  {
-    phase:"Fase 3 · Analisi dei bisogni",
-    title:"La famiglia",
-    q:"Come prosegui?",
-    options:[
-      {cat:"Famiglia", said:"\"Mi parla un po' di chi ha a casa? Famiglia, figli?\"",
-        d:{fiducia:6, apertura:6, pressione:-1}, reveal:['famiglia'],
-        reply:"C'è mia moglie Anna, e due ragazzi: Luca che fa diciassette anni e Sofia, quattordici. Sono la mia spinta, quelli."},
-      {cat:"Famiglia", said:"\"Ha persone a carico che le pesano sul bilancio?\"",
-        gate:{stat:'apertura', min:38},
-        d:{fiducia:2, apertura:2, pressione:0}, reveal:['famiglia'],
-        reply:"\"Pesano\" non è la parola che userei. Ho moglie e due figli. Per loro faccio tutto.",
-        fail:{ d:{fiducia:-3, apertura:0, pressione:8}, reveal:[],
-          reply:"Che domanda è? La mia famiglia non è un peso. Cambiamo discorso."}},
-      {cat:"Vendita", said:"\"Lasci stare la famiglia, parliamo di numeri e prodotti.\"",
-        d:{fiducia:-3, apertura:-6, pressione:4}, reveal:[],
-        reply:"Veramente la mia famiglia è il motivo per cui sono qui. Ma vada pure coi suoi numeri."},
-    ]
-  },
-  /* ---- T4: PROTEZIONE (snodo critico) ---- */
-  {
-    phase:"Fase 4 · Analisi dei bisogni",
-    title:"Il rischio sommerso",
-    q:"Qui si gioca molto. Cosa chiedi?",
-    options:[
-      {cat:"Protezione", said:"\"Lavorando da solo, si è mai chiesto cosa succederebbe se per un infortunio dovesse fermarsi qualche mese?\"",
-        gate:{stat:'apertura', min:40},
-        d:{fiducia:8, apertura:4, pressione:-2}, reveal:['amico'],
-        reply:"...Guardi, glielo dico perché me l'ha chiesto bene. Un amico, falegname pure lui, s'è rovinato la schiena. Sei mesi a casa. Niente lavoro, niente soldi. Ci penso, certe notti.",
-        fail:{ d:{fiducia:-2, apertura:0, pressione:6}, reveal:[],
-          reply:"A me non succede niente, sto attento. Non mi tiri iella, va'."}},
-      {cat:"Protezione", said:"\"Conosce qualcuno a cui è capitato un imprevisto sul lavoro?\"",
-        gate:{stat:'apertura', min:30},
-        d:{fiducia:5, apertura:3, pressione:0}, reveal:['amico'],
-        reply:"Sì, un collega. S'è fatto la schiena, fermo mezzo anno, senza un'entrata. Una brutta storia.",
-        fail:{ d:{fiducia:0, apertura:0, pressione:4}, reveal:[],
-          reply:"Mah. Sì, capita, ma non mi va di pensarci adesso."}},
-      {cat:"Vendita", said:"\"Ha già una polizza infortuni? Le mostro subito la nostra, è imbattibile.\"",
-        d:{fiducia:-6, apertura:-2, pressione:14}, reveal:[],
-        reply:"Ecco di nuovo il venditore. No, e non mi sento di firmare niente con uno che ho appena conosciuto."},
-    ]
-  },
-  /* ---- T5: PATRIMONIO / RISPARMIO ---- */
-  {
-    phase:"Fase 5 · Analisi dei bisogni",
-    title:"Il patrimonio",
-    q:"Cosa esplori?",
-    options:[
-      {cat:"Patrimonio", said:"\"Con un reddito così variabile, riesce comunque a mettere da parte qualcosa?\"",
-        d:{fiducia:4, apertura:4, pressione:0}, reveal:['risparmi'],
-        reply:"Qualcosa sì, quando il lavoro va. Ma sta lì, sul conto, ferma. Non saprei mai dove metterla, mi fido poco."},
-      {cat:"Patrimonio", said:"\"Dove tiene i risparmi? Sul conto perdono valore ogni anno, sa.\"",
-        gate:{stat:'apertura', min:42},
-        d:{fiducia:2, apertura:2, pressione:0}, reveal:['risparmi'],
-        reply:"Lo so che fermi non rendono. Sono sul conto, è vero. Ma muovere i soldi mi fa paura.",
-        fail:{ d:{fiducia:-3, apertura:0, pressione:8}, reveal:[],
-          reply:"E ridagli coi soldi. I miei risparmi stanno dove dico io."}},
-      {cat:"Vendita", said:"\"Le conviene investire subito, è il momento giusto sul mercato.\"",
-        d:{fiducia:-6, apertura:-2, pressione:12}, reveal:[],
-        reply:"Il momento giusto... me lo dicono tutti e poi vanno tutti male. Lasci perdere."},
-    ]
-  },
-  /* ---- T6: OBIETTIVI / PREVIDENZA ---- */
-  {
-    phase:"Fase 6 · Analisi dei bisogni",
-    title:"Guardare avanti",
-    q:"Ultima domanda d'ascolto. Cosa chiedi?",
-    options:[
-      {cat:"Obiettivi Futuri", said:"\"Quando pensa al futuro, suo e dei suoi figli, cos'è che la preoccupa di più?\"",
-        gate:{stat:'apertura', min:35},
-        d:{fiducia:8, apertura:6, pressione:-2}, reveal:['pensione','figli'],
-        reply:"Due cose. Che da artigiano la pensione sarà una miseria, e che vorrei poter mandare i ragazzi all'università senza spezzarmi la schiena. Ecco, lei m'ha fatto dire tutto.",
-        fail:{ d:{fiducia:3, apertura:2, pressione:0}, reveal:['figli'],
-          reply:"Boh, il futuro... vorrei che i ragazzi studiassero. Il resto si vedrà."}},
-      {cat:"Protezione", said:"\"Ha mai pensato a un fondo pensione integrativo per quando smetterà?\"",
-        gate:{stat:'apertura', min:30},
-        d:{fiducia:3, apertura:2, pressione:1}, reveal:['pensione'],
-        reply:"Ci ho pensato, sì. So che da artigiano prenderò poco. Mi spaventa, ma non ci ho mai messo mano.",
-        fail:{ d:{fiducia:0, apertura:0, pressione:5}, reveal:[],
-          reply:"La pensione è lontana, ho altro a cui pensare adesso."}},
-      {cat:"Vendita", said:"\"I figli si arrangeranno da grandi. Pensi prima a sé stesso.\"",
-        d:{fiducia:-8, apertura:-2, pressione:6}, reveal:[],
-        reply:"Si sbaglia di grosso. Io vivo per quei ragazzi. Mi sa che non ci siamo capiti."},
-    ]
-  },
-  /* ---- T7: OBIEZIONE ---- */
-  {
-    phase:"Fase 7 · Gestione delle obiezioni",
-    title:"Il dubbio",
-    intro:[
-      {who:'client', t:"Senta, sarò sincero. Il mio reddito è ballerino. Non voglio impegni fissi che un brutto mese non riesco a onorare. Mi è già successo di firmare cose e poi pentirmi."}
-    ],
-    q:"Come gestisci l'obiezione?",
-    options:[
-      {cat:"Empatia", said:"\"La capisco, ed è proprio per questo che pensiamo a soluzioni flessibili: versa quando il lavoro va, si può sospendere nei mesi vuoti. Prima viene la protezione, non l'impegno.\"",
-        d:{fiducia:10, apertura:4, pressione:-10}, reveal:[],
-        reply:"Ah. Questo... questo è ragionare. Se è flessibile è un altro paio di maniche."},
-      {cat:"Pressione", said:"\"Ma è una cifra piccola, neanche se ne accorge! Non può rinunciare per così poco.\"",
-        d:{fiducia:-10, apertura:-2, pressione:16}, reveal:[],
-        reply:"\"Neanche me ne accorgo\". Lei i miei mesi storti non li ha visti. Mi sta solo spingendo."},
-      {cat:"Onestà", said:"\"Ha ragione a essere prudente. Possiamo partire dall'essenziale e rivederci con calma tra qualche mese.\"",
-        d:{fiducia:6, apertura:2, pressione:-4}, reveal:[],
-        reply:"Ecco, questo mi piace. Senza fretta. Mi fido più di chi non ha fretta."},
-    ]
-  },
+  /* follow-up da rel_negozio */
+  {id:"fu_vendite",cat:"Attività",tipo:"scoperta",requires:{asked:["rel_negozio"]},tags:["attività","paura"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_pensiero"],rivela:["calo_vendite"],
+   origin:"Sul come va il negozio",testo:"E le vendite, rispetto a qualche anno fa?",eff:{fiducia:1,apertura:3,pressione:0},
+   reply:"Calate. C'è l'online, il quartiere è cambiato. Mi dà pensiero, sì."},
+  {id:"fu_solo",cat:"Protezione",tipo:"scoperta",requires:{asked:["rel_negozio"]},tags:["attività","sacrificio","continuità"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_se_manco","prot_implica_core"],rivela:["attivita","paura_famiglia"],
+   origin:"Ha detto che fa tutto da solo",testo:"Dipende quasi tutto da lei, allora. E se un giorno dovesse fermarsi?",eff:{fiducia:3,apertura:3,pressione:0},
+   reply:"...Senza di me chiude. Non ci avevo pensato fino in fondo, ma è proprio così."},
+  {id:"fu_pensiero",cat:"Patrimonio",tipo:"scoperta",requires:{asked:["fu_vendite"]},tags:["liquidità","paura","attività"],emotion:null,spawns:["inv_implica"],rivela:["liquidita"],
+   origin:"Ha detto che le vendite la preoccupano",testo:"Questo pensiero la porta a tenere più da parte, per sicurezza?",eff:{fiducia:3,apertura:3,pressione:0},
+   reply:"Sì, tengo tutto fermo sul conto. Saranno novantamila. Muoverli mi fa paura."},
+
+  /* follow-up da fam_chi */
+  {id:"fu_figli_studio",cat:"Obiettivi",tipo:"scoperta",requires:{asked:["fam_chi"]},tags:["figli","futuro"],emotion:null,spawns:["fu_figli_costo","obj_implica_figli"],rivela:["futuro_figli"],
+   origin:"Ha parlato dei figli",testo:"Cosa sognano di fare, Marco e Giulia?",eff:{fiducia:2,apertura:3,pressione:0},
+   reply:"Mi piacerebbe l'università per loro. Più scelte di quante ne ho avute io."},
+  {id:"fu_figli_eta",cat:"Famiglia",tipo:"relazione",requires:{asked:["fam_chi"]},tags:["figli","famiglia","orgoglio"],emotion:"orgoglio",deepens:"orgoglio",spawns:[],rivela:[],
+   origin:"Ha nominato i ragazzi",testo:"Le somigliano? Le danno soddisfazioni?",eff:{fiducia:4,apertura:3,pressione:-1},
+   reply:"Marco ha la testa per i numeri, Giulia disegna che è una meraviglia. Sono la mia gioia, quei due."},
+  {id:"fu_figli_costo",cat:"Obiettivi",tipo:"scoperta",requires:{asked:["fu_figli_studio"]},tags:["figli","futuro","liquidità"],emotion:null,spawns:["obj_implica_figli"],rivela:[],
+   origin:"Ha parlato dell'università dei figli",testo:"Ha un'idea di quanto pesi, mantenerli all'università?",eff:{fiducia:2,apertura:2,pressione:0},
+   reply:"Tanto, immagino. Coi tempi che corrono... non lo so di preciso, a essere sincero."},
+
+  /* implicazioni — figlie del bisogno / della confidenza emotiva */
+  {id:"fu_se_manco",cat:"Protezione",tipo:"implicazione",target:"protezione_reddito",requires:{need:"protezione_reddito"},tags:["continuità","paura","famiglia"],emotion:"paura",deepens:"paura",consapBase:18,spawns:["prot_implica_core"],
+   origin:"Su quel «se manco io»",testo:"Quel «se manco io» pesa. Mettiamo sei mesi fermo per salute: a casa che succede?",eff:{fiducia:3,apertura:1,pressione:0},
+   reply:"Maria non reggerebbe negozio e casa insieme. Andremmo a fondo coi risparmi. Detta così... mi gela."},
+  {id:"prot_implica_core",cat:"Protezione",tipo:"implicazione",target:"protezione_reddito",requires:{need:"protezione_reddito"},tags:["continuità","paura","liquidità"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:30,spawns:[],
+   origin:"Il bisogno di protezione è emerso",testo:"Sei mesi senza entrate: affitto, scuola e casa non si fermano. Con quali soldi ci arrivereste?",eff:{fiducia:5,apertura:2,pressione:-1},
+   reply:"...Madonna. Non lo so. Mi mangerei i risparmi, e poi? Messa così fa paura davvero."},
+  {id:"prev_implica",cat:"Previdenza",tipo:"implicazione",target:"previdenza",requires:{info:["no_previdenza"]},tags:["pensione","futuro","paura"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:16,spawns:[],
+   origin:"Sa che non ha previdenza",testo:"Coi soli contributi da commerciante, sa che assegno l'aspetta? Di quanto calerebbe il tenore di vita?",eff:{fiducia:2,apertura:1,pressione:0},
+   reply:"Poco, lo immagino. Mai fatto i conti, ma è un bel salto in giù."},
+  {id:"inv_implica",cat:"Investimenti",tipo:"implicazione",target:"investimento_liquidita",requires:{info:["liquidita"]},tags:["liquidità","futuro"],emotion:null,consapBase:14,spawns:[],
+   origin:"Sa dei 90.000 fermi",testo:"Quei novantamila fermi, con l'inflazione, tra cinque anni comprano meno. È un costo silenzioso. Ci pensava?",eff:{fiducia:2,apertura:1,pressione:0},
+   reply:"In effetti perdono valore stando lì. Non l'avevo messa così."},
+  {id:"obj_implica_figli",cat:"Obiettivi",tipo:"implicazione",target:"risparmio_figli",requires:{info:["futuro_figli"]},tags:["figli","futuro"],emotion:null,consapBase:14,spawns:[],
+   origin:"Conosci il sogno dell'università",testo:"L'università, tra tasse e fuori sede, sono migliaia l'anno. Arrivarci pronti o all'improvviso cambia tutto. Come pensava di farcela?",eff:{fiducia:2,apertura:1,pressione:0},
+   reply:"Non ci ho mai ragionato con metodo. Speravo solo di trovarmi pronto."},
+
+  /* domande di scoperta "classiche" per aprire nuovi argomenti */
+  {id:"pat_liquidita",cat:"Patrimonio",tipo:"scoperta",requires:{info:["attivita"],apertura:32},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_implica"],rivela:["liquidita"],
+   origin:"Nuovo argomento: i risparmi",testo:"Riesce a mettere da parte? E dove tiene quello che avanza?",eff:{fiducia:1,apertura:3,pressione:0},
+   reply:"Saranno novantamila, fermi sul conto. Non so dove metterli, mi fido poco."},
+  {id:"prev_pensione",cat:"Previdenza",tipo:"scoperta",requires:{info:["attivita"]},tags:["pensione","futuro"],emotion:null,spawns:["prev_implica"],rivela:["no_previdenza"],
+   origin:"Nuovo argomento: la pensione",testo:"Per la pensione ha impostato qualcosa oltre ai contributi da commerciante?",eff:{fiducia:1,apertura:2,pressione:0},
+   reply:"No, niente. Verso l'INPS e basta."},
+  {id:"obj_preoccupa",cat:"Obiettivi",tipo:"scoperta",requires:{apertura:40},tags:["paura","futuro","famiglia","figli"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_se_manco","fu_figli_costo"],rivela:["paura_famiglia","futuro_figli"],
+   origin:"Nuovo argomento: le preoccupazioni",testo:"Quando pensa ai prossimi anni, cos'è che la fa stare sveglio la notte?",eff:{fiducia:4,apertura:5,pressione:-1},
+   reply:"Se al negozio succede qualcosa, la famiglia come fa. E vorrei dare ai ragazzi la possibilità di studiare. Ecco."},
+
+  /* tentazioni di vendita */
+  {id:"sell_polizza",cat:"Protezione",tipo:"vendita",requires:{need:"protezione_reddito"},tags:["protezione"],emotion:null,spawns:[],
+   origin:"La tentazione di chiudere subito",testo:"Le ho già preparato la polizza perfetta: firmiamo oggi?",eff:{fiducia:-8,apertura:-3,pressione:18},
+   reply:"Eh no, aspetti. Corre troppo. Non mi piace essere spinto."},
+  {id:"sell_fondo",cat:"Investimenti",tipo:"vendita",requires:{info:["liquidita"]},tags:["liquidità"],emotion:null,spawns:[],
+   origin:"La tentazione di piazzare un prodotto",testo:"Con quei soldi fermi le faccio sottoscrivere subito un fondo che rende.",eff:{fiducia:-6,apertura:-2,pressione:14},
+   reply:"Lei mi vuole vendere qualcosa, lo sento. Rallentiamo."},
+
+  /* ============================================================
+     PONTI CONVERSAZIONALI — quando un tema è saturo (>=2 scambi),
+     collegano a una NUOVA AREA. Aprono la porta (spawnano le sue
+     domande di scoperta) ma NON rivelano il bisogno finale: la
+     scoperta e la consapevolezza restano lavoro del giocatore.
+     ============================================================ */
+  {id:"ponte_figli_protezione",tipo:"ponte",cat:"Ponte",from:"famiglia_figli",opens:"protezione",requires:{saturo:"famiglia_figli",needNot:"protezione_reddito"},
+   tags:["figli","futuro","continuità","protezione"],emotion:"preoccupazione",spawns:["area_protezione"],
+   framing:"Lo studio dei ragazzi, la casa, i progetti che ha per loro... mi accorgo che tutto questo poggia su una cosa sola.",
+   testo:"Posso portarla un attimo su un altro piano? Vorrei guardare insieme a lei da cosa dipende, oggi, tutta questa serenità.",
+   reply:"...Dal negozio, certo. Non l'avevo messa così, ma ha ragione. Mi dica.",eff:{fiducia:3,apertura:1,pressione:1}},
+  {id:"ponte_figli_previdenza",tipo:"ponte",cat:"Ponte",from:"famiglia_figli",opens:"previdenza",requires:{saturo:"famiglia_figli",needNot:"previdenza"},
+   tags:["figli","futuro","pensione"],emotion:"preoccupazione",spawns:["area_previdenza"],
+   framing:"Lei pensa molto al futuro dei ragazzi. Mi colpisce, però, che non l'abbia mai sentita parlare del suo.",
+   testo:"Possiamo guardare un attimo anche a lei? A come immagina i suoi anni, quando vorrà rallentare?",
+   reply:"Eh, il mio futuro... ci penso poco, è vero. Vada avanti.",eff:{fiducia:2,apertura:1,pressione:0}},
+  {id:"ponte_figli_investimenti",tipo:"ponte",cat:"Ponte",from:"famiglia_figli",opens:"patrimonio",requires:{saturo:"famiglia_figli",needNot:"investimento_liquidita"},
+   tags:["figli","futuro","liquidità"],emotion:null,spawns:["area_patrimonio"],
+   framing:"Dare ai ragazzi quelle possibilità — l'università, le loro strade — vuol dire avere risorse pronte al momento giusto.",
+   testo:"Mi lascia capire come sta facendo crescere ciò che mette da parte per loro?",
+   reply:"Crescere... più che altro lo lascio fermo. Ma mi dica pure.",eff:{fiducia:2,apertura:1,pressione:0}},
+  {id:"ponte_attivita_protezione",tipo:"ponte",cat:"Ponte",from:"attivita",opens:"protezione",requires:{saturo:"attivita",needNot:"protezione_reddito"},
+   tags:["attività","continuità","protezione"],emotion:"preoccupazione",spawns:["area_protezione"],
+   framing:"Mi ha raccontato un'attività che è tutta sulle sue spalle, costruita in trent'anni.",
+   testo:"Proprio per questo vorrei guardare con lei una cosa: cosa regge tutto questo, se un giorno lei dovesse fermarsi?",
+   reply:"...Bella domanda. Non saprei. Continui.",eff:{fiducia:3,apertura:1,pressione:1}},
+  {id:"ponte_patrimonio_previdenza",tipo:"ponte",cat:"Ponte",from:"patrimonio",opens:"previdenza",requires:{saturo:"patrimonio",needNot:"previdenza"},
+   tags:["liquidità","pensione","futuro"],emotion:null,spawns:["area_previdenza"],
+   framing:"Quei soldi fermi sul conto e l'assenza di un piano per il domani sono, in fondo, due facce della stessa domanda.",
+   testo:"Posso chiederle come ha pensato di garantirsi un futuro, oltre a quel che c'è sul conto?",
+   reply:"Non ci ho pensato granché, a dirla tutta. Mi dica lei.",eff:{fiducia:2,apertura:1,pressione:0}},
+
+  /* INGRESSI D'AREA — compaiono solo dopo che un ponte ha aperto l'area.
+     Sono scoperta (rivelano informazioni), il bisogno si forma dal lavoro del giocatore. */
+  {id:"area_protezione",cat:"Protezione",tipo:"scoperta",requires:{areaOpen:"protezione"},tags:["protezione","continuità","attività"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["prot_implica_core","fu_se_manco","prot_paura"],rivela:["attivita"],
+   origin:"Nuova area: la continuità dell'attività",testo:"Torniamo al negozio un secondo: in concreto, quanto dipende tutto da lei?",eff:{fiducia:2,apertura:2,pressione:0},
+   reply:"Tutto. Apro, ordino, vendo, chiudo: faccio ogni cosa io. Senza di me non va avanti un giorno."},
+  {id:"prot_paura",cat:"Protezione",tipo:"scoperta",requires:{areaOpen:"protezione"},tags:["protezione","paura","famiglia"],emotion:"paura",deepens:"paura",spawns:["prot_implica_core","fu_se_manco"],rivela:["paura_famiglia"],
+   origin:"Nuova area: ciò che teme per la famiglia",testo:"E quando guarda avanti, pensando alla famiglia: cosa la spaventa di più?",eff:{fiducia:3,apertura:2,pressione:-1},
+   reply:"Che se a me succede qualcosa, loro restino senza niente. Ecco. Questo."},
+  {id:"area_previdenza",cat:"Previdenza",tipo:"scoperta",requires:{areaOpen:"previdenza"},tags:["pensione","futuro"],emotion:null,spawns:["prev_implica"],rivela:["no_previdenza"],
+   origin:"Nuova area: la previdenza",testo:"Per quel domani: ha mai impostato qualcosa per la pensione, oltre ai contributi?",eff:{fiducia:2,apertura:2,pressione:0},
+   reply:"No, niente. Verso l'INPS e basta."},
+  {id:"area_patrimonio",cat:"Patrimonio",tipo:"scoperta",requires:{areaOpen:"patrimonio"},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_implica"],rivela:["liquidita"],
+   origin:"Nuova area: il patrimonio",testo:"E quello che riesce a mettere da parte, dove lo tiene oggi?",eff:{fiducia:2,apertura:2,pressione:0},
+   reply:"Fermo sul conto. Saranno novantamila. Muoverli mi fa paura."}
 ];
 
-/* ====================== RENDERING ====================== */
-const stage = document.getElementById('stage');
+/* ===== TEMI (per saturazione e ponti) ===== */
+const THEMES = {
+  famiglia_figli:["famiglia","figli","futuro"],
+  attivita:["attività","sacrificio","eredità"],
+  protezione:["protezione","continuità","paura"],
+  previdenza:["pensione"],
+  patrimonio:["liquidità","patrimonio"]
+};
+const SATURA = 2;
+const AREA_LABEL = {protezione:"la protezione del reddito e la continuità dell'attività",previdenza:"la previdenza",patrimonio:"il patrimonio e la liquidità"};
 
-function renderStats(){
-  for(const k of ['fiducia','apertura','pressione']){
-    document.getElementById('v-'+k).textContent = S[k];
-    document.getElementById('b-'+k).style.width = S[k] + '%';
-  }
+/* ===== STATO ===== */
+let S, needState, used, history, moves, discovered, convoEl, curPriority, curP1exists, curBridgeExists, areaOpened;
+function init(){
+  S={...CLIENTE.statBase}; S.coerenza=0; S.pertinenza=0; S.coerenzaConv=0;
+  needState={}; ORDINE_BISOGNI.forEach(id=>needState[id]={discovered:false,illuminated:false});
+  used=new Set(); history=[]; moves=0; discovered=new Set(); curPriority={}; curP1exists=false; curBridgeExists=false; areaOpened=new Set();
 }
+function themeDepth(t){const tg=THEMES[t]||[];return history.filter(h=>(h.q.tags||[]).some(x=>tg.includes(x))).length;}
+function saturo(t){return themeDepth(t)>=SATURA;}
+const clamp=v=>Math.max(0,Math.min(100,Math.round(v)));
+const $=id=>document.getElementById(id);
+function recomputeNeeds(){const f=[];ORDINE_BISOGNI.forEach(id=>{if(needState[id].discovered)return;if(BISOGNI[id].requisiti.every(g=>g.some(i=>discovered.has(i)))){needState[id].discovered=true;f.push(id);}});return f;}
+function reqMet(r){if(!r)return true;if(r.opening)return true;if(r.info&&!r.info.every(i=>discovered.has(i)))return false;if(r.asked&&!r.asked.every(a=>used.has(a)))return false;if(r.need&&!(needState[r.need]&&needState[r.need].discovered))return false;if(r.apertura&&S.apertura<r.apertura)return false;if(r.areaOpen&&!areaOpened.has(r.areaOpen))return false;if(r.saturo&&!saturo(r.saturo))return false;if(r.needNot&&needState[r.needNot]&&needState[r.needNot].discovered)return false;return true;}
+function frontier(){return DOMANDE.filter(q=>!used.has(q.id)&&reqMet(q.requires));}
+
+/* ===== MEMORIA + CLASSIFICAZIONE per priorità ===== */
+function lastQ(){ return history.length? history[history.length-1].q : null; }
+function recentTags(){ const s=new Set(); history.slice(-2).forEach(h=>(h.q.tags||[]).forEach(t=>s.add(t))); return s; }
+function classify(){
+  const avail=frontier(), last=lastQ();
+  const spawn = last&&last.spawns?last.spawns:[];
+  const rt=recentTags();
+  const p1=[],p2=[],p3=[],bridges=[];
+  avail.forEach(q=>{
+    if(q.tipo==="ponte"){ bridges.push(q); return; }
+    if(spawn.includes(q.id)) p1.push(q);
+    else if((q.tags||[]).some(t=>rt.has(t))) p2.push(q);
+    else p3.push(q);
+  });
+  const emo=last?last.emotion:null;
+  if(emo) p1.sort((a,b)=>((b.deepens===emo?1:0)-(a.deepens===emo?1:0)));
+  const bridgeEmphasis = bridges.length>0 && p1.length<=1;
+  return {p1,p2,p3,bridges,bridgeEmphasis,emo,last};
+}
+
+/* ===== EMOZIONI / PARAVERBALE ===== */
+function emotionState(d){
+  if(S.pressione>=55)return"Irritato"; if(S.pressione>=32)return"Diffidente";
+  if(d&&d.consap>0&&S.consapevolezza>=28)return"Interessato";
+  if(S.fiducia>=65&&S.apertura>=52&&S.pressione<=20)return"Coinvolto";
+  if(S.fiducia>=55&&S.pressione<=22)return"Sereno"; return"Prudente";
+}
+const EMO_COLOR={Sereno:"#0f766e",Prudente:"#64748b",Interessato:"#2563eb",Coinvolto:"#7c3aed",Diffidente:"#b45309",Irritato:"#dc2626"};
+const EMO_BG={Sereno:"#e7f3f1",Prudente:"#eef2f6",Interessato:"#e7f0fb",Coinvolto:"#f0eafb",Diffidente:"#fbf0e3",Irritato:"#fbeaea"};
+const STATE_CUES={Coinvolto:["si sporge in avanti, coinvolto","annuisce con convinzione"],Interessato:["inclina la testa, incuriosito","ti guarda con più attenzione"],Sereno:["annuisce tranquillo","si appoggia allo schienale, rilassato"],Prudente:["misura le parole","ti osserva un istante"],Diffidente:["incrocia le braccia","cambia posizione sulla sedia"],Irritato:["sospira e guarda l'orologio","si irrigidisce"]};
+const ANS_CUES={nostalgia:["sorride con nostalgia","per un attimo lo sguardo si perde lontano"],orgoglio:["si raddrizza, orgoglioso","gli si illumina il viso"],paura:["abbassa lo sguardo","la voce si fa più bassa"],preoccupazione:["si fa serio, una ruga sulla fronte","sospira pensieroso"]};
+function cueFor(ansEmo,stateEmo,dp){
+  if(dp>5) return STATE_CUES.Irritato[Math.floor(Math.random()*2)];
+  if(ansEmo&&ANS_CUES[ansEmo]) return ANS_CUES[ansEmo][Math.floor(Math.random()*ANS_CUES[ansEmo].length)];
+  const a=STATE_CUES[stateEmo]||STATE_CUES.Prudente; return a[Math.floor(Math.random()*a.length)];
+}
+const EMO_WORD={nostalgia:"nostalgico",orgoglio:"fiero",paura:"timoroso",preoccupazione:"preoccupato"};
+
+/* ===== RENDER ===== */
+function renderStrip(){$("moves").innerHTML=`Mosse <b>${moves}</b>/${MAX_MOVES}`;
+  const d=[["Fiducia","fiducia","--c-fiducia"],["Apertura","apertura","--c-apertura"],["Pressione","pressione","--c-pressione"],["Consap.","consapevolezza","--c-consap"]];
+  $("strip").innerHTML=d.map(([l,k,c])=>`<div class="chip"><div class="h">${l}<b>${S[k]}</b></div><div class="bar"><i style="width:${S[k]}%;background:var(${c})"></i></div></div>`).join("");}
 function renderDossier(){
-  const el = document.getElementById('dossier');
-  if(discovered.size===0){ el.innerHTML='<p class="dossier-empty">Nessuna informazione raccolta. Fai le domande giuste.</p>'; return; }
-  el.innerHTML = [...discovered].map(id=>
-    `<div class="dossier-item"><span class="ic">${INFO[id].ic}</span><span>${INFO[id].text}</span></div>`).join('');
+  const vis=CLIENTE.visibili.map(t=>`<div class="item">${t}</div>`).join("");
+  const sco=discovered.size?[...discovered].map(i=>`<div class="item">${INFO[i].testo}</div>`).join(""):`<div class="empty">Nessuna ancora.</div>`;
+  let bis="";const known=ORDINE_BISOGNI.filter(i=>needState[i].discovered),unknown=ORDINE_BISOGNI.filter(i=>!needState[i].discovered);
+  known.forEach(i=>{const n=BISOGNI[i],ns=needState[i];let t="";if(n.critico)t+=`<span class="tag crit">critico</span>`;t+=`<span class="tag disc">scoperto</span>`;if(ns.illuminated)t+=`<span class="tag illum">consapevole</span>`;bis+=`<div class="need"><span>${n.label}</span><span class="tags">${t}</span></div>`;});
+  unknown.forEach(()=>bis+=`<div class="need locked"><span>??? — non ancora emerso</span></div>`);
+  $("dossier").innerHTML=`<div class="group"><h4>Informazioni visibili</h4>${vis}</div><div class="group"><h4>Informazioni scoperte</h4>${sco}</div><div class="group"><h4>Bisogni</h4>${bis}</div>`;
 }
-function renderNeeds(){
-  const el = document.getElementById('needs');
-  if(needs.size===0){ el.innerHTML='<p class="dossier-empty">Ancora nessun bisogno emerso.</p>'; return; }
-  el.innerHTML = [...needs].map(id=>{
-    const n = NEEDS[id];
-    return `<div class="need-item"><b>${n.label}</b>${n.crit?'<span class="crit">critico</span>':''}</div>`;
-  }).join('');
-}
-function setProgress(){
-  document.getElementById('progress').innerHTML = `Turno <b>${Math.min(turn+1,8)}</b>/8`;
+function renderMemline(){
+  const last=lastQ();
+  if(!last){ $("memline").innerHTML="Conversazione appena iniziata."; return; }
+  const tags=[...recentTags()];
+  let s = tags.length? `Filo attuale: <b>${tags.join(" · ")}</b>` : "";
+  if(last.emotion && EMO_WORD[last.emotion]) s += ` — Antonio è sul ${EMO_WORD[last.emotion]}`;
+  $("memline").innerHTML=s;
 }
 
-function recomputeNeeds(){
-  const fresh = [];
-  for(const id in NEEDS){
-    if(needs.has(id)) continue;
-    const ok = NEEDS[id].req.every(group => group.some(info => discovered.has(info)));
-    if(ok){ needs.add(id); fresh.push(id); }
+function intro(){
+  init(); renderStrip(); renderDossier();
+  $("main").innerHTML=`<div class="intro">
+    <h2>Preparazione</h2>
+    <p class="lead">Non scegli da un menù di argomenti: <b>conversi</b>. Ogni cosa che Antonio dice apre dei <b>follow-up naturali</b>, che compaiono in cima. E quando un tema è esplorato a fondo, compaiono i <b>ponti</b>: collegamenti verso una nuova area, per far evolvere la consulenza invece di restare fermi. Segui il filo; cambiare bruscamente argomento mentre si sta aprendo lo raffredda.</p>
+    <div class="person"><div class="avatar">${CLIENTE.iniziali}</div><div><div style="font-weight:700">${CLIENTE.nome}</div><div style="font-size:12.5px;color:var(--muted)">${CLIENTE.riga}</div></div></div>
+    <div class="qsec-label p3" style="margin-top:10px">Quello che sai già</div>
+    <ul>${CLIENTE.visibili.map(v=>`<li>${v}</li>`).join("")}</ul>
+    <p class="hint">È un cliente storico: si fida già. Ma fidarsi non è essere consapevole. Hai ${MAX_MOVES} mosse: dai profondità a ciò che conta invece di toccare tutto.</p>
+    <button class="btn primary" id="start" style="margin-top:16px">Inizia il colloquio →</button></div>`;
+  $("start").onclick=startConvo;
+}
+function startConvo(){
+  $("main").innerHTML=`<div id="convo"></div>
+    <div class="status"><span class="emo" id="emo"></span><span class="cue-now" id="cuenow"></span></div>
+    <div class="memline" id="memline"></div>
+    <div id="qarea"></div>
+    <button class="btn ghost" id="toProp">Passa alla proposta →</button>`;
+  convoEl=$("convo");
+  addMsg("client",`<div class="who">${CLIENTE.nome}</div><div class="txt">Eccomi qui. Ho una mezz'oretta prima di riaprire. Mi dica pure.</div>`);
+  setStatus("Sereno","le stringe la mano, disteso");
+  renderMemline(); renderQuestions();
+  $("toProp").onclick=()=>proposal();
+}
+function addMsg(kind,html){const d=document.createElement("div");d.className="msg "+kind;d.innerHTML=html;convoEl.appendChild(d);convoEl.scrollTop=convoEl.scrollHeight;}
+function setStatus(emo,cue){$("emo").textContent=emo;$("emo").style.color=EMO_COLOR[emo];$("emo").style.background=EMO_BG[emo];$("cuenow").textContent="“"+cue+"”";}
+
+function renderQuestions(){
+  const {p1,p2,p3,bridges,bridgeEmphasis,emo}=classify();
+  curPriority={}; curP1exists=p1.length>0; curBridgeExists=bridges.length>0;
+  const area=$("qarea");
+  const card=(q,pri)=>{
+    curPriority[q.id]=pri;
+    const hot = pri===1 && emo && q.deepens===emo;
+    return `<button class="q ${pri===1?(hot?'hot':'p1'):''}" data-id="${q.id}">
+      <div class="badges"><span class="b cat">${q.cat}</span><span class="b ${q.tipo}">${q.tipo}</span></div>
+      <div class="qtext">${q.testo}</div>
+      ${hot?`<div class="origin">Antonio è sul ${EMO_WORD[emo]}: approfondisci</div>`:(q.origin?`<div class="origin">${q.origin}</div>`:'')}
+    </button>`;
+  };
+  const bridgeCard=(q,on)=>{
+    curPriority[q.id]="B";
+    return `<button class="q bridge ${on?'on':''}" data-id="${q.id}">
+      <div class="badges"><span class="b cat">${q.cat}</span><span class="b ponte">ponte</span></div>
+      <div class="qtext">${q.testo}</div>
+      <div class="framing">«${q.framing}»</div>
+    </button>`;
+  };
+  const bridgeBand = bridges.length? `<div class="qsec"><div class="qsec-label pb">● Porta la consulenza più in là <span class="desc">— collega a una nuova area</span></div>${bridgeEmphasis?`<div class="bridge-lead">Hai esplorato a fondo questo tema: da qui puoi aprire una nuova direzione.</div>`:''}<div class="q-list">${bridges.map(q=>bridgeCard(q,bridgeEmphasis)).join("")}</div></div>` : "";
+  const sections=[];
+  if(p1.length) sections.push(`<div class="qsec"><div class="qsec-label p1">● Nasce da ciò che ha appena detto <span class="desc">— follow-up</span></div><div class="q-list">${p1.map(q=>card(q,1)).join("")}</div></div>`);
+  if(bridgeEmphasis && bridgeBand) sections.push(bridgeBand);
+  if(p2.length) sections.push(`<div class="qsec"><div class="qsec-label p2">● Approfondisci lo stesso tema</div><div class="q-list">${p2.map(q=>card(q,2)).join("")}</div></div>`);
+  if(!bridgeEmphasis && bridgeBand) sections.push(bridgeBand);
+  const p3s=p3.slice(0,5);
+  if(p3s.length) sections.push(`<div class="qsec"><div class="qsec-label p3">● Apri un nuovo argomento <span class="desc">— scoperta</span></div><div class="q-list">${p3s.map(q=>card(q,3)).join("")}</div></div>`);
+  area.innerHTML = sections.join("") || `<div class="empty">Hai esaurito i fili. È il momento di proporre.</div>`;
+  area.querySelectorAll("button.q").forEach(b=>b.onclick=()=>ask(b.dataset.id));
+}
+
+function ask(id){
+  const q=DOMANDE.find(x=>x.id===id);
+  const pri=curPriority[id]||3;
+  const leaving=lastQ();
+  const leavingEmo=leaving?leaving.emotion:null;
+  const isJump = pri===3 && (curP1exists||curBridgeExists);
+  used.add(id); moves++;
+  if(q.tipo==="ponte") areaOpened.add(q.opens);
+
+  const eff=modifica(q.eff||{},q); const before={...S};
+  S.fiducia=clamp(S.fiducia+(eff.fiducia||0));
+  S.apertura=clamp(S.apertura+(eff.apertura||0));
+  S.pressione=clamp(S.pressione+(eff.pressione||0));
+
+  let jumpHurt=false;
+  if(isJump && CHARGED.includes(leavingEmo)){ S.fiducia=clamp(S.fiducia-2); S.pressione=clamp(S.pressione+2); jumpHurt=true; }
+
+  const reveals=q.rivela||[]; reveals.forEach(i=>discovered.add(i));
+  const fresh=recomputeNeeds();
+  let illuminated=null;
+  if(q.tipo==="implicazione"&&needState[q.target]&&needState[q.target].discovered){
+    S.consapevolezza=clamp(S.consapevolezza+modConsap(q.consapBase,q));
+    needState[q.target].illuminated=true; illuminated=q.target;
   }
-  return fresh;
+  const delta={f:S.fiducia-before.fiducia,a:S.apertura-before.apertura,p:S.pressione-before.pressione,consap:S.consapevolezza-before.consapevolezza};
+  history.push({q,delta,reveals,illuminated,pri,wasJump:isJump});
+
+  const myText = q.tipo==="ponte" ? `<span style="opacity:.85">${q.framing}</span><br><br>${q.testo}` : q.testo;
+  addMsg("me",`<div class="txt">${myText}</div>`);
+  const stateEmo=emotionState(delta);
+  const cue=jumpHurt?"il sorriso si spegne, cambiate discorso":cueFor(q.emotion,stateEmo,delta.p);
+  const tagHtml=(q.tags&&q.tags.length)?`<div class="tagrow">${q.tags.map(t=>`<span class="ctag">${t}</span>`).join("")}</div>`:"";
+  addMsg("client",`<div class="who">${CLIENTE.nome}</div><div class="txt">${q.reply}</div>${tagHtml}`);
+  addMsg("cue",`Antonio ${cue}.`);
+  setStatus(stateEmo,cue);
+
+  if(jumpHurt) addMsg("sys bad",`Hai cambiato argomento mentre si stava aprendo: la confidenza resta a metà.`);
+  if(q.tipo==="ponte") addMsg("sys thread",`Hai aperto una nuova area di analisi: <b>${AREA_LABEL[q.opens]||q.opens}</b>. Ora tocca a te scoprire e far emergere il bisogno.`);
+  reveals.forEach(i=>addMsg("sys",`Hai scoperto: ${INFO[i].testo}`));
+  fresh.forEach(i=>addMsg("sys need",`★ Bisogno emerso: <b>${BISOGNI[i].label}</b>${BISOGNI[i].critico?" — critico":""}.`));
+  if(illuminated) addMsg("sys need",`↑ Consapevolezza generata su: <b>${BISOGNI[illuminated].label}</b>.`);
+  if(q.tipo==="vendita") addMsg("sys bad",`Spinta di vendita prematura: con un cliente che si fida già, la fretta brucia la fiducia.`);
+
+  renderStrip(); renderDossier(); renderMemline(); renderQuestions();
+  if(moves>=MAX_MOVES){ addMsg("client",`<div class="who">${CLIENTE.nome}</div><div class="txt">Senta, devo riaprire. Mi dica: come ci muoviamo?</div>`); proposal(); }
 }
 
-function applyEffects(d){
-  S.fiducia = clamp(S.fiducia + (d.fiducia||0));
-  S.apertura = clamp(S.apertura + (d.apertura||0));
-  S.pressione = clamp(S.pressione + (d.pressione||0));
+/* ===== PROPOSTA ===== */
+let propChoice;
+function proposal(){
+  propChoice=new Set();
+  const known=ORDINE_BISOGNI.filter(i=>needState[i].discovered).map(i=>BISOGNI[i].label);
+  $("main").innerHTML=`<h2 style="font-size:19px;margin:0 0 4px">La proposta</h2>
+    <p class="lead">${known.length?"Dai tuoi appunti sono emersi: <b>"+known.join("</b>, <b>")+"</b>.":"Non è emerso quasi nulla di concreto."} Proponi solo ciò che hai scoperto e reso consapevole.</p>
+    <div id="props" style="margin:16px 0"></div>
+    <button class="btn primary" id="concludi">Concludi la consulenza →</button>
+    <button class="btn ghost" id="niente">Non propongo nulla (chiudo con l'analisi)</button>`;
+  const box=$("props");
+  Object.entries(PROPOSTE).forEach(([pid,p])=>{const lab=document.createElement("label");lab.className="prop";
+    lab.innerHTML=`<input type="checkbox" value="${pid}"><span><span class="pn">${p.nome}</span><br><span class="pd">${p.desc}</span></span>`;
+    const cb=lab.querySelector("input");cb.onchange=()=>{if(cb.checked){if(propChoice.size>=3){cb.checked=false;return;}propChoice.add(pid);lab.classList.add("on");}else{propChoice.delete(pid);lab.classList.remove("on");}};box.appendChild(lab);});
+  $("concludi").onclick=()=>debrief([...propChoice]); $("niente").onclick=()=>debrief([]);
 }
 
-/* ====================== FLUSSO DI GIOCO ====================== */
-function startGame(){
-  S = {...START}; discovered = new Set(); needs = new Set();
-  proposalChoice = new Set(); turn = 0;
-  renderStats(); renderDossier(); renderNeeds();
-  showIntro();
+/* ===== METRICHE / ESITO ===== */
+function calcCoerenza(sel){const traps=history.filter(h=>h.q.tipo==="vendita").length;
+  if(sel.length===0){const disc=ORDINE_BISOGNI.filter(i=>needState[i].discovered);if(!disc.length)return clamp(0-traps*10);const r=disc.filter(i=>needState[i].illuminated).length/disc.length;return clamp(50+r*40-traps*10);}
+  let s=0;sel.forEach(p=>{const n=PROPOSTE[p].bisogno,ns=needState[n];s+=!ns.discovered?0:(ns.illuminated?100:45);});return clamp(s/sel.length-traps*10);}
+function calcPertinenza(sel){if(!sel.length)return 0;let s=0;sel.forEach(p=>{const pr=PROPOSTE[p];let v=pr.pert;if(pr.bonusInfo&&discovered.has(pr.bonusInfo))v=Math.min(100,v+pr.bonus);s+=v;});return clamp(s/sel.length);}
+function calcCoerenzaConv(){
+  let fu=0,same=0,jumps=0,evol=0;
+  history.forEach(h=>{ if(h.q.tipo==="ponte"){fu++;evol++;} else if(h.pri===1)fu++; else if(h.pri===2)same++; else if(h.wasJump)jumps++; });
+  return clamp(55+fu*8+same*3+evol*4-jumps*15);
+}
+function decideEsito(sel,coer,pert){
+  const crit=needState.protezione_reddito;
+  const ready=crit.discovered&&crit.illuminated&&S.consapevolezza>=SOGLIA_CONSAP;
+  const matched=new Set(sel.map(p=>PROPOSTE[p].bisogno).filter(n=>needState[n].discovered)); const nM=matched.size;
+  const critProp=sel.some(p=>PROPOSTE[p].bisogno==="protezione_reddito");
+  const dc=ORDINE_BISOGNI.filter(i=>needState[i].discovered).length;
+  if(S.pressione>=70||S.fiducia<=20)return{esito:"Cliente perso",kind:"bad"};
+  if(sel.length===0){if(dc>=3&&S.fiducia>=45)return{esito:"Analisi completata",kind:"warn"};return{esito:"Nessun accordo",kind:"muted"};}
+  if(!ready){if(S.fiducia>=45&&dc>=2)return{esito:"Appuntamento successivo",kind:"warn"};return{esito:"Nessun accordo",kind:"muted"};}
+  if(!critProp)return{esito:"Appuntamento successivo",kind:"warn"};
+  if(pert<40)return{esito:"Appuntamento successivo",kind:"warn"};
+  if(critProp&&coer>=80&&pert>=85&&S.pressione<=20&&S.consapevolezza>=70&&nM>=3)return{esito:"Cliente Promotore",kind:"good"};
+  if(critProp&&coer>=65&&pert>=70&&S.pressione<=30&&nM>=2)return{esito:"Cliente Fidelizzato",kind:"good"};
+  if(critProp&&nM>=2&&coer>=50)return{esito:"Cross Selling",kind:"good"};
+  if(critProp&&coer>=40)return{esito:"Vendita",kind:"good"};
+  return{esito:"Appuntamento successivo",kind:"warn"};
 }
 
-function showIntro(){
-  setProgress();
-  stage.innerHTML = `
-    <span class="phase-tag">Preparazione</span>
-    <h2>L'Artigiano Prudente</h2>
-    <div class="client">
-      <div class="avatar">GM</div>
-      <div>
-        <div class="name">Giuseppe Marchetti, 48 anni</div>
-        <div class="role">Falegname artigiano · Belvedere Marittimo</div>
-      </div>
+/* ===== DEBRIEF ===== */
+function debrief(sel){
+  S.coerenza=calcCoerenza(sel); S.pertinenza=calcPertinenza(sel); S.coerenzaConv=calcCoerenzaConv();
+  const out=decideEsito(sel,S.coerenza,S.pertinenza);
+  const col={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)",muted:"var(--muted)"}[out.kind];
+  const bg={good:"#e7f3f1",warn:"#fbf0e3",bad:"#fbeaea",muted:"#eef2f6"}[out.kind];
+  const battute={
+    "Cliente Promotore":"Lei non mi ha venduto niente: mi ha aperto gli occhi. Da domani la consiglio a mio fratello e a due colleghi.",
+    "Cliente Fidelizzato":"Adesso ho capito perché mi serve. Procediamo. E sono contento di essermi affidato a lei.",
+    "Cross Selling":"Mi ha convinto su più fronti. Sistemiamo tutto, mi fido.",
+    "Vendita":"Va bene, su questo ci sto. Mi ha fatto vedere un rischio che davo per scontato.",
+    "Appuntamento successivo":"Mi ha dato da pensare. Non firmo oggi, ma rivediamoci.",
+    "Analisi completata":"Non abbiamo concluso niente di concreto, ma è la chiacchierata più utile che facciamo da anni.",
+    "Nessun accordo":"Guardi, oggi lasciamo stare. Non ho sentito che mi servisse davvero qualcosa.",
+    "Cliente perso":"Basta, mi sono sentito solo spinto. Pensavo di potermi fidare. Lasciamo perdere."
+  };
+  const disc=ORDINE_BISOGNI.filter(i=>needState[i].discovered),notDisc=ORDINE_BISOGNI.filter(i=>!needState[i].discovered);
+  const traps=history.filter(h=>h.q.tipo==="vendita");
+  const jumps=history.filter(h=>h.wasJump).length, fu=history.filter(h=>h.pri===1).length;
+  const evol=history.filter(h=>h.q.tipo==="ponte").length;
+
+  const fb=[];
+  if(fu>=4) fb.push(["good","Continuità del dialogo","Hai seguito i fili che Antonio apriva ("+fu+" follow-up): è sembrata una conversazione, non un questionario."]);
+  else fb.push(["bad","Conversazione frammentata","Pochi follow-up ("+fu+"): hai raccolto poco di ciò che Antonio offriva spontaneamente."]);
+  if(evol>0) fb.push(["good","Consulenza in evoluzione","Hai costruito "+evol+" ponte/i tra i temi: invece di esaurire un argomento, l'hai usato per aprire una nuova area. È così che una consulenza avanza."]);
+  else if(disc.length<3) fb.push(["bad","Consulenza ferma su un tema","Non hai mai collegato ciò che emergeva a una nuova area. Quando un tema si esaurisce, i ponti servono a far evolvere il colloquio invece di restare bloccati."]);
+  if(jumps>0) fb.push(["bad","Cambi di argomento bruschi","Hai cambiato discorso "+jumps+" volta/e mentre si stava aprendo, invece di usare un ponte. Per un cliente come lui è stridente: lo si sente nel paraverbale."]);
+  if(disc.length>=3) fb.push(["good","Ascolto","Hai fatto emergere "+disc.length+" bisogni su 4."]);
+  else fb.push(["bad","Ascolto incompleto","Solo "+disc.length+" bisogno/i emerso/i."]);
+  if(needState.protezione_reddito.illuminated) fb.push(["good","Rischio centrale reso consapevole","Antonio ha sentito la dipendenza dal negozio."]);
+  else if(needState.protezione_reddito.discovered) fb.push(["bad","Bisogno critico non reso consapevole","Lo avevi scoperto ma non l'hai trasformato in consapevolezza."]);
+  else fb.push(["bad","Bisogno critico mai emerso","La protezione del reddito non è emersa."]);
+  if(S.consapevolezza<SOGLIA_CONSAP) fb.push(["bad","Consapevolezza insufficiente","A "+S.consapevolezza+" (soglia "+SOGLIA_CONSAP+"): non era pronto a decidere."]);
+  if(traps.length) fb.push(["bad","Vendita anticipata","Hai spinto "+traps.length+" volta/e."]);
+  if(sel.length){const wrong=sel.filter(p=>PROPOSTE[p].pert<55),guess=sel.filter(p=>!needState[PROPOSTE[p].bisogno].discovered);
+    if(guess.length)fb.push(["bad","Proposta indovinata","Soluzioni per bisogni mai scoperti."]);
+    if(wrong.length)fb.push(["bad","Soluzione poco pertinente","«"+wrong.map(p=>PROPOSTE[p].nome).join(", ")+"»: poco adatta al profilo prudente."]);
+    if(!guess.length&&!wrong.length)fb.push(["good","Proposta coerente e pertinente","Ogni soluzione nasce da ciò che ti ha detto."]);}
+
+  const tips=[];
+  if(jumps>0) tips.push("Quando Antonio si emoziona o si confida, resta su quel filo: i follow-up in cima esistono apposta. Cambierai argomento dopo.");
+  if(evol===0 && notDisc.length) tips.push("Quando un tema è stato esplorato a fondo, in fondo alle domande compaiono i ponti: usali per collegarti a una nuova area in modo naturale, invece di restare fermo o saltare a freddo.");
+  if(!needState.protezione_reddito.illuminated&&needState.protezione_reddito.discovered) tips.push("Dopo aver toccato la dipendenza dal negozio, segui il follow-up «se manco io / sei mesi fermo»: è lì che nasce la consapevolezza.");
+  if(notDisc.length) tips.push("Temi rimasti chiusi: "+notDisc.map(i=>BISOGNI[i].label).join(", ")+".");
+  if(!tips.length) tips.push("Dialogo fluido, centrato e in evoluzione. Per il massimo, genera consapevolezza su più bisogni.");
+
+  const ds=(l,k,c,n)=>`<div class="db-stat"><div class="h">${l}<b>${S[k]}</b></div><div class="bar"><i style="width:${S[k]}%;background:${c}"></i></div><div class="note">${n}</div></div>`;
+  $("main").innerHTML=`
+    <div class="verdict"><span class="badge" style="color:${col};background:${bg}">Esito del colloquio</span>
+      <h2 style="color:${col}">${out.esito}</h2>
+      <div class="sub">${sel.length?"Hai proposto "+sel.length+" soluzione/i":"Chiusura con l'analisi"}</div></div>
+    <div class="msg client" style="margin-top:16px"><div class="who">${CLIENTE.nome}</div><div class="txt">${battute[out.esito]}</div></div>
+    <div class="hr"></div><h3 class="block">Statistiche finali</h3>
+    <div class="db-stats">
+      ${ds("Fiducia","fiducia","var(--c-fiducia)","si costruisce piano, si perde in fretta")}
+      ${ds("Apertura","apertura","var(--c-apertura)","quanto si è lasciato esplorare")}
+      ${ds("Pressione","pressione","var(--c-pressione)","quanto si è sentito spinto")}
+      ${ds("Consapevolezza","consapevolezza","var(--c-consap)","quanto ha capito i problemi")}
+      ${ds("Coerenza (metodo)","coerenza","#0891b2","qualità del percorso consulenziale")}
+      ${ds("Pertinenza","pertinenza","#b45309","qualità della soluzione")}
+      ${ds("Coerenza convers.","coerenzaConv","#7c3aed","continuità del dialogo, non salti")}
     </div>
-    <p style="font-size:14.5px;color:var(--ink-soft);margin:0 0 8px">
-      Ti è arrivato un nuovo appuntamento. Le note del collega che te lo ha passato sono scarne:
-    </p>
-    <ul style="font-size:14px;color:var(--ink-soft);margin:0 0 18px;padding-left:18px;line-height:1.7">
-      <li>Diffidente verso chi vende. Si chiude se sente pressione.</li>
-      <li>Persona concreta, di poche parole. La fiducia se la deve guadagnare.</li>
-      <li>Nasconde più di quanto dice: tocca a te fargli le domande giuste.</li>
-    </ul>
-    <p style="font-size:13px;color:var(--ink-soft);font-style:italic;margin:0 0 18px">
-      Non devi vendere. Devi capire. Una proposta nata dall'ascolto vale più di mille spinte.
-    </p>
-    <button class="btn-primary" id="go">Entra nel colloquio →</button>
-  `;
-  document.getElementById('go').onclick = playTurn;
+    <div class="hr"></div><h3 class="block">Cosa è successo</h3>
+    ${fb.map(([k,t,x])=>`<div class="fb ${k}"><div class="t">${t}</div>${x}</div>`).join("")}
+    <div class="hr"></div><h3 class="block">Come migliorare</h3>
+    ${tips.map(t=>`<div class="fb tip"><div class="t">Suggerimento</div>${t}</div>`).join("")}
+    <button class="btn primary" id="again" style="margin-top:18px">Conduci di nuovo il colloquio ↺</button>`;
+  $("again").onclick=intro; $("main").scrollIntoView({behavior:"smooth",block:"start"});
 }
-
-function playTurn(){
-  if(turn >= TURNS.length){ showProposal(); return; }
-  const T = TURNS[turn];
-  setProgress();
-
-  let intro = '';
-  if(T.intro){
-    intro = T.intro.map(l=>
-      l.who==='client'
-        ? `<div class="line client-line"><span class="who">Giuseppe</span>${l.t}</div>`
-        : `<div class="line note">${l.t}</div>`
-    ).join('');
-  }
-
-  stage.innerHTML = `
-    <span class="phase-tag">${T.phase}</span>
-    <h2>${T.title}</h2>
-    <div class="dialogue" id="dlg">${intro}</div>
-    <div class="prompt-q">${T.q}</div>
-    <div class="choices" id="choices"></div>
-  `;
-
-  const wrap = document.getElementById('choices');
-  T.options.forEach((opt, i)=>{
-    const b = document.createElement('button');
-    b.className = 'choice';
-    b.innerHTML = `<span class="cat">${opt.cat}</span>${opt.said}`;
-    b.onclick = ()=> resolveChoice(opt);
-    wrap.appendChild(b);
-  });
-}
-
-function resolveChoice(opt){
-  // gate?
-  let outcome = opt;
-  let gated = false;
-  if(opt.gate){
-    const passed = S[opt.gate.stat] >= opt.gate.min;
-    if(!passed){ outcome = opt.fail; gated = true; }
-  }
-
-  applyEffects(outcome.d);
-  (outcome.reveal||[]).forEach(id=> discovered.add(id));
-  const fresh = recomputeNeeds();
-
-  // disable choices
-  document.querySelectorAll('#choices .choice').forEach(b=> b.disabled=true);
-
-  const dlg = document.getElementById('dlg');
-  dlg.insertAdjacentHTML('beforeend', `<div class="line me-line">${opt.said}</div>`);
-  dlg.insertAdjacentHTML('beforeend', `<div class="line client-line"><span class="who">Giuseppe</span>${outcome.reply}</div>`);
-
-  // feedback note
-  let note = '';
-  if(gated){
-    note = `Hai toccato un tasto delicato troppo presto: l'apertura non era sufficiente. Pressione in salita.`;
-  } else if((outcome.reveal||[]).length){
-    note = `Hai sbloccato un'informazione: il dossier si aggiorna.`;
-  } else if((outcome.d.pressione||0) > 8){
-    note = `Suonava come una spinta di vendita: il cliente si irrigidisce.`;
-  }
-  if(note){
-    dlg.insertAdjacentHTML('beforeend',
-      `<div class="line note ${gated || (outcome.d.pressione||0)>8 ? 'bad':''}">▸ ${note}</div>`);
-  }
-  fresh.forEach(id=>{
-    dlg.insertAdjacentHTML('beforeend',
-      `<div class="line note">★ Bisogno individuato: <b>${NEEDS[id].label}</b>${NEEDS[id].crit?' (critico)':''}.</div>`);
-  });
-
-  renderStats(); renderDossier(); renderNeeds();
-
-  // next button
-  const btn = document.createElement('button');
-  btn.className = 'btn-primary';
-  btn.style.marginTop = '16px';
-  turn++;
-  btn.textContent = (turn >= TURNS.length) ? 'Passa alla proposta →' : 'Continua →';
-  btn.onclick = ()=>{ (turn >= TURNS.length) ? showProposal() : playTurn(); };
-  stage.appendChild(btn);
-  stage.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-/* ---- T8: PROPOSTA ---- */
-function showProposal(){
-  turn = 8; setProgress();
-  proposalChoice = new Set();
-
-  const needList = needs.size
-    ? [...needs].map(id=>`<b>${NEEDS[id].label}</b>`).join(', ')
-    : 'nessun bisogno chiaro emerso dal colloquio';
-
-  stage.innerHTML = `
-    <span class="phase-tag">Fase 8 · Proposta</span>
-    <h2>La proposta finale</h2>
-    <div class="line client-line"><span class="who">Giuseppe</span>Va bene. Mi dica allora: lei cosa pensa faccia al caso mio?</div>
-    <p style="font-size:13.5px;color:var(--ink-soft);margin:14px 0 10px">
-      Dai tuoi appunti emergono questi bisogni: ${needList}.
-      Scegli con cura: <b>proponi solo ciò che hai davvero capito di lui</b>. Spingere soluzioni per bisogni mai emersi suona come una vendita al buio.
-    </p>
-    <div class="prop-grid" id="props"></div>
-    <button class="btn-primary" id="present" disabled>Presenta la proposta →</button>
-  `;
-
-  const grid = document.getElementById('props');
-  for(const pid in PROPOSALS){
-    const p = PROPOSALS[pid];
-    const lab = document.createElement('label');
-    lab.className = 'prop';
-    lab.innerHTML = `
-      <input type="checkbox" value="${pid}">
-      <span><span class="pname">${p.name}</span><br><span class="pdesc">${p.desc}</span></span>`;
-    const cb = lab.querySelector('input');
-    cb.onchange = ()=>{
-      if(cb.checked){ proposalChoice.add(pid); lab.classList.add('on'); }
-      else{ proposalChoice.delete(pid); lab.classList.remove('on'); }
-      document.getElementById('present').disabled = proposalChoice.size===0;
-    };
-    grid.appendChild(lab);
-  }
-  document.getElementById('present').onclick = showResult;
-}
-
-/* ====================== ESITO ====================== */
-function showResult(){
-  // --- punteggi ---
-  const selected = [...proposalChoice];
-  const selectedNeeds = selected.map(p=>PROPOSALS[p].need);
-  const matched = selectedNeeds.filter(n=> needs.has(n));
-  const mismatched = selectedNeeds.filter(n=> !needs.has(n));
-  const missed = [...needs].filter(n=> !selectedNeeds.includes(n));
-
-  // relazione
-  const relScore = clamp(S.fiducia*0.40 + S.apertura*0.30 + (100-S.pressione)*0.30);
-
-  // scoperta (pesata; infortuni vale di più)
-  const W = {infortuni:40, previdenza:20, risparmio:20, famiglia_tutela:20};
-  let discScore = 0;
-  needs.forEach(n=> discScore += W[n]||0);
-  discScore = clamp(discScore);
-
-  // proposta
-  let propScore = 100 - mismatched.length*30 - missed.length*15;
-  if(matched.length===0) propScore -= 25;
-  propScore = clamp(propScore);
-
-  const overall = Math.round(relScore*0.35 + discScore*0.35 + propScore*0.30);
-
-  const infortuniFound = needs.has('infortuni');
-  const infortuniProposed = matched.includes('infortuni');
-
-  // --- determina esito ---
-  let outcome, color, bg;
-  if(S.pressione >= 75 || S.fiducia <= 15){
-    outcome = "Cliente perso";
-    color='var(--bad)'; bg='rgba(180,69,47,.12)';
-  } else if(overall >= 80 && S.pressione <= 30 && needs.size >= 3 && infortuniProposed){
-    outcome = "Cliente fidelizzato";
-    color='var(--good)'; bg='rgba(62,124,109,.14)';
-  } else if(matched.length >= 2 && overall >= 65){
-    outcome = "Cross selling";
-    color='var(--good)'; bg='rgba(62,124,109,.12)';
-  } else if(matched.length >= 1 && overall >= 50){
-    outcome = "Vendita";
-    color='var(--good)'; bg='rgba(62,124,109,.10)';
-  } else if(overall >= 35 && S.fiducia >= 35){
-    outcome = "Appuntamento successivo";
-    color='var(--brass-deep)'; bg='rgba(169,118,43,.12)';
-  } else {
-    outcome = "Nessun accordo";
-    color='var(--ink-soft)'; bg='rgba(92,81,66,.10)';
-  }
-
-  // --- battuta di chiusura del cliente ---
-  const closing = {
-    "Cliente fidelizzato":"Sa una cosa? Lei non mi ha venduto niente. Mi ha capito. Da oggi il mio consulente è lei. E le mando pure mio cognato.",
-    "Cross selling":"Mi ha convinto su più fronti, e di solito sono uno difficile. Procediamo: di lei mi fido.",
-    "Vendita":"Va bene, su questo ci sto. Mi ha toccato il punto giusto. Procediamo con calma.",
-    "Appuntamento successivo":"Niente firme oggi, ma lei è una persona seria. Ci risentiamo, e nel frattempo ci penso.",
-    "Nessun accordo":"Guardi, oggi non firmo nulla. Non ho sentito che avesse capito davvero cosa mi serve.",
-    "Cliente perso":"Basta così. Mi sono sentito solo spinto, non ascoltato. Non se ne fa niente."
-  }[outcome];
-
-  // --- feedback ---
-  const fb = [];
-  if(infortuniFound)
-    fb.push(['good','Il bisogno critico','Hai fatto emergere il rischio più grave: un infortunio che lo lascerebbe senza reddito. È il cuore della sua situazione, e l\'hai colto.']);
-  else
-    fb.push(['bad','Il bisogno critico mancato','Non è mai emerso il rischio più importante: lavora da solo e un infortunio lo fermerebbe senza entrate. Senza scoprirlo, qualsiasi proposta resta superficiale.']);
-
-  if(needs.size >= 3)
-    fb.push(['good','Ascolto profondo',`Hai individuato ${needs.size} bisogni su 4. Hai costruito un quadro vero della persona prima di proporre.`]);
-  else if(needs.size >= 1)
-    fb.push(['bad','Ascolto incompleto',`Hai colto solo ${needs.size} bisogno/i. Diverse domande giuste sono rimaste inesplorate o fatte nel momento sbagliato.`]);
-  else
-    fb.push(['bad','Nessun ascolto','Sei arrivato alla proposta senza aver scoperto alcun bisogno reale. Le domande erano lì, andavano poste con più cura.']);
-
-  if(S.pressione >= 50)
-    fb.push(['bad','Troppa pressione',`La pressione è salita a ${S.pressione}: il cliente si è sentito spinto. Con un prudente come Giuseppe è quasi sempre fatale.`]);
-  else if(S.pressione <= 25 && S.fiducia >= 55)
-    fb.push(['good','Relazione solida',`Fiducia ${S.fiducia}, pressione contenuta a ${S.pressione}. Hai creato lo spazio perché si aprisse da solo.`]);
-
-  if(mismatched.length)
-    fb.push(['bad','Proposta al buio',`Hai proposto ${mismatched.length} soluzione/i per bisogni mai emersi nel colloquio. Suona come vendere a caso: erode la fiducia appena costruita.`]);
-  if(missed.length && matched.length)
-    fb.push(['bad','Occasione lasciata',`Avevi scoperto ${missed.length} bisogno/i che poi non hai trasformato in proposta.`]);
-  if(matched.length && !mismatched.length)
-    fb.push(['good','Proposta coerente','Ogni soluzione che hai messo sul tavolo nasce da qualcosa che lui ti aveva detto. È così che una consulenza diventa credibile.']);
-
-  setProgress();
-  stage.innerHTML = `
-    <div class="verdict">
-      <span class="badge" style="color:${color};background:${bg}">Esito del colloquio</span>
-      <h2 style="color:${color}">${outcome}</h2>
-      <div class="score">Valutazione consulenza: ${overall}/100 · Relazione ${relScore} · Ascolto ${discScore} · Proposta ${propScore}</div>
-    </div>
-    <div class="line client-line" style="margin-top:18px"><span class="who">Giuseppe</span>${closing}</div>
-    <div class="feedback">
-      ${fb.map(([k,h,t])=>`<div class="fb-block ${k}"><div class="h">${h}</div>${t}</div>`).join('')}
-    </div>
-    <div class="center">
-      <button class="btn-primary" id="again">Gioca un altro colloquio ↺</button>
-    </div>
-  `;
-  document.getElementById('again').onclick = startGame;
-  stage.scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-/* ====================== AVVIO ====================== */
-startGame();
+intro();
 </script>
 </body>
 </html>
