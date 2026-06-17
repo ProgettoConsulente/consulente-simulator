@@ -129,6 +129,17 @@
 
 <script>
 "use strict";
+const APERTURE_COMUNI=[
+ {id:"apr_comesta",tipo:"relazione",cat:"apertura",testo:"Prima di entrare nel merito: come sta, in generale, di questi tempi?",eff:{fiducia:5,apertura:6},rivela:[],tags:["apertura"],requires:{opening:true},replies:["Si tira avanti, come tutti. Qualche pensiero, ma non mi lamento.","Diciamo bene. Tanto da fare, ma è la vita che ho scelto.","Mah, giornate piene. A volte fin troppo, le dirò."]},
+ {id:"apr_oggi",tipo:"relazione",cat:"apertura",testo:"Cosa l'ha spinta a prendersi questo momento, oggi?",eff:{fiducia:6,apertura:5},rivela:[],tags:["apertura"],requires:{opening:true},replies:["Certe cose continuavo a rimandarle. Mi son detto: basta rimandare.","Un po' di curiosità, e un po' la sensazione che sia ora di mettere ordine.","Me l'hanno consigliato. E in effetti due domande me le faccio anch'io."]},
+ {id:"apr_racconti",tipo:"relazione",cat:"apertura",testo:"Mi racconti un po' di lei, al di là del lavoro.",eff:{fiducia:5,apertura:7},rivela:[],tags:["apertura"],requires:{opening:true},replies:["Beh, la famiglia, le solite cose. Il lavoro mi prende parecchio, lo ammetto.","Poco tempo libero, le dico la verità. Ma quando c'è, lo do ai miei.","Persona semplice: lavoro, casa, gli affetti. Non chiedo molto di più."]},
+ {id:"apr_comodo",tipo:"relazione",cat:"apertura",testo:"Si trova comodo a parlarne qui, con calma?",eff:{fiducia:5,apertura:5},rivela:[],tags:["apertura"],requires:{opening:true},replies:["Sì sì, tranquillo.","Per ora sì. Vediamo dove andiamo a parare.","Comodo. Anche se di queste cose non parlo spesso."]},
+ {id:"prf_orgoglio",tipo:"relazione",cat:"profondità",testo:"Cosa la rende più orgoglioso, guardando indietro?",eff:{fiducia:4,apertura:7},rivela:[],tags:["orgoglio"],emotion:"orgoglio",requires:{apertura:45},replies:["Aver costruito qualcosa di mio, con le mie mani. Non era scontato.","I miei figli, senza dubbio. Il resto viene dopo.","Essere arrivato fin qui partendo da poco. Quello sì."]},
+ {id:"prf_conta",tipo:"relazione",cat:"profondità",testo:"Fuori dal lavoro, cosa conta davvero per lei?",eff:{fiducia:4,apertura:7},rivela:[],tags:["preoccupazione"],emotion:"preoccupazione",requires:{apertura:45},replies:["La famiglia. Alla fine è per loro che faccio tutto.","La tranquillità. Sapere che chi mi sta intorno sta bene.","Le persone a cui voglio bene. Il resto sono dettagli."]},
+ {id:"prf_rischio",tipo:"relazione",cat:"profondità",testo:"C'è qualcosa che, se ci pensa, non vorrebbe mai mettere a rischio?",eff:{fiducia:4,apertura:6},rivela:[],tags:["paura"],emotion:"paura",requires:{apertura:48},replies:["La serenità dei miei. Quella no, non la tocco.","Quello che ho messo in piedi. Sarebbe un peccato buttarlo via.","Stare bene. Se salta quello, salta tutto il resto."]},
+ {id:"prf_descrive",tipo:"relazione",cat:"profondità",testo:"Se dovesse descriversi a chi non la conosce, da dove partirebbe?",eff:{fiducia:5,apertura:6},rivela:[],tags:["orgoglio"],emotion:"orgoglio",requires:{apertura:45},replies:["Direi: uno che le cose se le è sudate.","Uno a cui piace fare le cose per bene. Forse troppo.","Una persona di parola. Per me conta ancora qualcosa."]}
+];
+
 const SALUTI={asciutto:["Buongiorno.","Salve."],cordiale:["Buongiorno, come va?","Buongiorno, piacere di rivederla.","Salve, come sta?","Buongiorno."]};
 const CONSAP_LIQUIDITA={
  osservazione:"Quindi, oggi, gran parte di ciò che mette da parte resta ferma lì, sul conto.",
@@ -730,7 +741,7 @@ function generaCliente(archId){
     let reply=q.reply; const pool=VARIANTI[q.id];
     if(pool){ const v=variante(pool,voce); if(v) reply=v; }
     return {...q, testo:fill(q.testo,id), reply:fill(reply,id), framing:fill(q.framing,id)};
-  });
+  }).concat(APERTURE_COMUNI.map(t=>({...t, reply:fill(pick(t.replies),id)})));
   const nome = A.catalogo==="commerciante"? pick(["Antonio Greco","Salvatore Russo","Nicola De Luca","Pietro Amato"]) : pick(["Elena Ferraro","Marco Bianchi","Chiara Neri","Davide Conti"]);
   return {
     archetipo:A.id, catalogo:A.catalogo, scenario:scen.label, paura:scen.paura, nome, difficolta:A.difficolta,
