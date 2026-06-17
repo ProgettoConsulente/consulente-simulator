@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Consulente Simulator V8 — Modello a Scenari</title>
+<title>Consulente Simulator V9 — Macchina a fasi</title>
 <style>
   :root{
     --bg:#eaeef2; --surface:#fff; --surface-2:#f5f8fa; --ink:#18242f; --muted:#5d6b7a;
@@ -94,12 +94,31 @@
   .avatar{width:52px;height:52px;border-radius:11px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex-shrink:0}
   .diff{display:inline-flex;gap:2px;margin-left:8px} .diff i{width:7px;height:7px;border-radius:50%;background:#cbd5e1} .diff i.on{background:var(--warn)}
   ul.vis{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px}
+
+  .phasebar{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+  .fsteps{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .fstep{display:flex;align-items:center;gap:5px;opacity:.45;font-size:11.5px}
+  .fstep.on{opacity:1;font-weight:700;color:var(--primary-d)} .fstep.done{opacity:.8}
+  .fstep .fn{width:18px;height:18px;border-radius:50%;background:#cbd5e1;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .fstep.on .fn{background:var(--primary)} .fstep.done .fn{background:var(--good)}
+  .farrow{color:#cbd5e1;font-size:13px}
+  .prontezza{margin-top:9px} .prontezza .pl{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .prontezza .pbar{height:7px;background:#e5ebf0;border-radius:5px;overflow:hidden} .prontezza .pbar i{display:block;height:100%;border-radius:5px;transition:width .4s}
+  .prontezza .pready{font-size:11px;color:var(--primary-d);font-weight:600;margin-top:4px}
+  .pmastery{font-size:11px;color:var(--muted);margin-top:7px} .pmastery b{color:#7c3aed}
+  button.q.centrale{border-left:3px solid var(--primary)} button.q.ammessa{border-left:3px solid #94a3b8}
+  button.q.avanza{border-left:3px solid #7c3aed;background:#f7f3fe}
+  button.q.fuori{border-left:3px solid #e2a23b;opacity:.85}
+  .b.restituzione{background:#ede9fe;color:#6d28d9}
+  .b.consapevolezza{background:#e6f4ef;color:#0f766e} .b.emersione{background:#fce7f3;color:#be185d} .b.proposta{background:#e7f3f1;color:var(--primary-d)}
+  .tag.ric{background:#e9f8ee;color:#15803d} .tag.pri{background:#fff4e0;color:#b45309} .tag.cov{background:#e7f3f1;color:var(--primary-d)}
+  .msg.sys.ok{color:#15803d;background:#e9f8ee;border:1px solid #c5ead2;border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:600}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="row1"><div class="brand">Consulente Simulator <small>V8 · Scenari</small></div><div class="moves" id="moves"></div></div>
+    <div class="row1"><div class="brand">Consulente Simulator <small>V9 · Macchina a fasi</small></div><div class="moves" id="moves"></div></div>
     <div class="stat-strip" id="strip"></div>
   </div>
   <div class="grid">
@@ -110,6 +129,22 @@
 
 <script>
 "use strict";
+const CONSAP_LIQUIDITA={
+ osservazione:"Quindi, oggi, gran parte di ciò che mette da parte resta ferma lì, sul conto.",
+ curiosita:"Le faccio una domanda, così ci ragioniamo insieme: secondo lei, quella cifra, fra dieci anni, comprerà le stesse cose di oggi?",
+ proiezione:"Si immagini fra dieci anni: la cifra sul conto è identica. Solo che, con quella, allora ci fa la metà delle cose. Come la farebbe sentire?",
+ contrasto:"C'è una cosa che stride: da un lato lavora per mettere da parte, dall'altro quel risparmio resta immobile e, fermo, ogni anno perde un pezzetto.",
+ implicazione:"Con il tempo, fermo, quel denaro perde potere d'acquisto. Anche non scegliere, in fondo, è una scelta.",
+ reazioni:{
+  piena:["Non ci avevo mai pensato, in effetti.","...Però è vero. Non l'avevo mai vista così.","Accidenti. Detta così, cambia le cose."],
+  parziale:["Capisco cosa intende.","Sì, un fondo di verità c'è.","Mh. Può starci, in effetti."],
+  resiste:["Ci ho riflettuto, ma muovere quei soldi mi preoccupa.","Lo so, però mi sento più tranquillo a saperli lì, fermi."],
+  minimizza:["Può essere, ma preferisco comunque la liquidità.","Sarà, ma io dormo meglio a saperli sul conto."],
+  controarg:["Sì, ma oggi i mercati sono un terno al lotto.","E se poi arriva un'altra crisi? Fermi, almeno, non li perdo."],
+  ripetuto:["Su questo ci eravamo già arrivati.","Sì, quello l'ho capito."]
+ }
+};
+
 const MAX_MOVES = 12, SOGLIA_CONSAP = 50, SATURA = 2;
 const CHARGED = ["nostalgia","orgoglio","paura","preoccupazione"];
 const clamp=v=>Math.max(0,Math.min(100,Math.round(v)));
@@ -375,12 +410,12 @@ const CATALOGHI = {
       fragilita:"Ha toccato con mano la propria fragilità e ci pensa spesso."
     },
     BISOGNI:{
-      protezione_reddito:{label:"Protezione del reddito",requisiti:[["attivita"],["calo_vendite","paura_famiglia"]],propostaIdeale:"p_protezione",trappole:["p_vita_generica"]},
-      risparmio_figli:{label:"Risparmio per i figli",requisiti:[["futuro_figli"]],propostaIdeale:"p_accumulo",trappole:[]},
-      investimento_liquidita:{label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gestione",trappole:["p_aggressivo"]},
-      passaggio_generazionale:{label:"Passaggio generazionale",requisiti:[["attivita"],["eta_eredi","valore_avviamento"]],propostaIdeale:"p_passaggio",trappole:["p_vendi_subito"]},
-      protezione_salute:{label:"Protezione salute",requisiti:[["problema_salute"],["fragilita"]],propostaIdeale:"p_salute",trappole:["p_infortuni"]},
-      previdenza:{label:"Previdenza",requisiti:[["no_previdenza"]],propostaIdeale:"p_previdenza",trappole:[]}
+      protezione_reddito:{insight:"Da ciò che mi racconta, mi colpisce come tutto — casa, famiglia, l'attività — poggi su un'unica spalla: la sua.",label:"Protezione del reddito",requisiti:[["attivita"],["calo_vendite","paura_famiglia"]],propostaIdeale:"p_protezione",trappole:["p_vita_generica"]},
+      risparmio_figli:{insight:"Da ciò che mi dice, i suoi figli sono il filo di tutto: e il loro domani, oggi, è affidato più alla speranza che a un piano.",label:"Risparmio per i figli",requisiti:[["futuro_figli"]],propostaIdeale:"p_accumulo",trappole:[]},
+      investimento_liquidita:{consap:CONSAP_LIQUIDITA,insight:"Da ciò che mi dice, quei soldi fermi sul conto non sono una scelta tranquilla: con l'inflazione, in silenzio, ogni anno valgono un po' meno.",label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gestione",trappole:["p_aggressivo"]},
+      passaggio_generazionale:{insight:"Da ciò che mi racconta, quello che ha costruito è legato a lei più di quanto sembri: senza un disegno, ciò che passa a chi viene dopo resta appeso a un punto interrogativo.",label:"Passaggio generazionale",requisiti:[["attivita"],["eta_eredi","valore_avviamento"]],propostaIdeale:"p_passaggio",trappole:["p_vendi_subito"]},
+      protezione_salute:{insight:"Da ciò che mi dice, la sua salute è la base silenziosa di tutto il resto: ed è proprio la cosa che diamo per scontata finché regge.",label:"Protezione salute",requisiti:[["problema_salute"],["fragilita"]],propostaIdeale:"p_salute",trappole:["p_infortuni"]},
+      previdenza:{insight:"Da ciò che mi racconta, al 'dopo' — quando rallenterà — finora non ha mai dato una forma: è un pezzo di futuro lasciato in bianco.",label:"Previdenza",requisiti:[["no_previdenza"]],propostaIdeale:"p_previdenza",trappole:[]}
     },
     PROPOSTE:{
       p_protezione:{bisogno:"protezione_reddito",nome:"Protezione del reddito / continuità d'impresa",desc:"Indennità e rendita se un imprevisto lo ferma.",pert:95},
@@ -500,10 +535,10 @@ const CATALOGHI = {
       reddito_alto:"Reddito medio elevato, ben sopra la media della categoria."
     },
     BISOGNI:{
-      previdenza:{label:"Previdenza integrativa",requisiti:[["no_previdenza"],["orizzonte_lungo","reddito_variabile"]],propostaIdeale:"p_pip",trappole:[]},
-      protezione_reddito:{label:"Protezione del reddito",requisiti:[["dipendenza_lavoro"]],propostaIdeale:"p_protez",trappole:[]},
-      investimento_liquidita:{label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gest",trappole:["p_unico"]},
-      ottimizzazione_fiscale:{label:"Ottimizzazione fiscale",requisiti:[["carico_fiscale"]],propostaIdeale:"p_fisco",trappole:[]}
+      previdenza:{insight:"Da ciò che mi racconta, al 'dopo' — quando rallenterà — finora non ha mai dato una forma: è un pezzo di futuro lasciato in bianco.",label:"Previdenza integrativa",requisiti:[["no_previdenza"],["orizzonte_lungo","reddito_variabile"]],propostaIdeale:"p_pip",trappole:[]},
+      protezione_reddito:{insight:"Da ciò che mi racconta, mi colpisce come tutto — casa, famiglia, l'attività — poggi su un'unica spalla: la sua.",label:"Protezione del reddito",requisiti:[["dipendenza_lavoro"]],propostaIdeale:"p_protez",trappole:[]},
+      investimento_liquidita:{consap:CONSAP_LIQUIDITA,insight:"Da ciò che mi dice, quei soldi fermi sul conto non sono una scelta tranquilla: con l'inflazione, in silenzio, ogni anno valgono un po' meno.",label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gest",trappole:["p_unico"]},
+      ottimizzazione_fiscale:{insight:"Da ciò che mi racconta, una parte di ciò che produce se ne va ogni anno in modo evitabile: non è un tecnicismo, è capitale suo che non resta suo.",label:"Ottimizzazione fiscale",requisiti:[["carico_fiscale"]],propostaIdeale:"p_fisco",trappole:[]}
     },
     PROPOSTE:{
       p_pip:{bisogno:"previdenza",nome:"Piano previdenziale a deduzione",desc:"Versamenti flessibili ed efficienti sul reddito variabile.",pert:92},
@@ -602,6 +637,35 @@ const SCENARI = {
     ponti:["ponte_patr_fiscale","ponte_lavoro_previdenza"]}
 };
 
+// Strato NARRATIVO degli scenari: indizi visibili in apertura (la situazione, non la
+// diagnosi), anagrafica coerente con la storia, e battuta d'apertura del cliente.
+const SCENA = {
+  comm_declino:{eta:[48,50,52],anni:[6,7,8],
+    visibili:["Cliente da {anniCliente} anni","Bottega di quartiere aperta da oltre trent'anni","Manda avanti il negozio quasi da solo","Si parla di tempi più duri di una volta"],
+    apertura:"Eccomi. Le dico la verità: è un periodo in cui il negozio mi dà più pensieri che soddisfazioni."},
+  comm_figli:{eta:[46,48,50],anni:[5,6,7],
+    visibili:["Cliente da {anniCliente} anni","Attività commerciale avviata e in salute","Due figli adolescenti, {f1} e {f2}","Comincia a guardare al loro futuro"],
+    apertura:"Buongiorno. Sa, ultimamente più che a me penso a dove arriveranno i ragazzi."},
+  comm_successione:{eta:[57,59,61],anni:[9,11,13],
+    visibili:["Cliente da {anniCliente} anni","Quasi quarant'anni dietro lo stesso bancone","Si avvicina alla pensione","In famiglia nessuno sembra pronto a raccogliere il testimone"],
+    apertura:"Mi dica pure. Anche se, arrivato alla mia età, certe domande ho già cominciato a farmele da solo."},
+  comm_salute:{eta:[50,53,56],anni:[7,8,9],
+    visibili:["Cliente da {anniCliente} anni","Attività commerciale di famiglia","Reduce da un problema di salute","Si è dovuto fermare per qualche settimana"],
+    apertura:"Buongiorno. Da quella brutta storia di salute, le confesso, ho qualche pensiero in più del solito."},
+  prof_previdenza:{eta:[44,46,48],anni:[3,4],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere})","Reddito elevato ma irregolare","Vorrebbe rallentare prima dei sessanta"],
+    apertura:"Buongiorno. Le sarò sincero: lavoro tanto, ma ho iniziato a chiedermi fino a quando potrò reggere questi ritmi."},
+  prof_protezione:{eta:[38,40,42],anni:[2,3],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere})","Tutto il reddito dipende dalle sue prestazioni","Nessuna rete di sicurezza alle spalle"],
+    apertura:"Buongiorno. Lo studio gira bene, però è tutto sulle mie spalle — e ogni tanto la cosa mi pesa."},
+  prof_liquidita:{eta:[41,44,47],anni:[3,4],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere}) ad alto reddito","Mette da parte molto, ma senza un criterio preciso"],
+    apertura:"Buongiorno. Guadagno bene, e qualcosa da parte riesco a metterlo. Resta lì, sul conto. Se sto facendo la scelta giusta, però, non saprei dirlo."},
+  prof_fiscale:{eta:[43,46,49],anni:[2,3],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere}) ad alto reddito","Sente di versare troppo al fisco"],
+    apertura:"Buongiorno. Le dico subito il mio cruccio: pago tasse che mi sembrano enormi, e non so se sia inevitabile."}
+};
+
 // ARCHETIPO = ricetta: paniere di scenari + distribuzione di personalità.
 const ARCHETIPI = [
   {id:"commerciante", nome:"Commerciante storico", catalogo:"commerciante", difficolta:2,
@@ -619,9 +683,13 @@ function fill(str, id){ if(str==null) return str; return str.replace(/\{(\w+)\}/
 function generaCliente(archId){
   const A = ARCHETIPI.find(a=>a.id===archId);
   const C = CATALOGHI[A.catalogo];
-  const scen = SCENARI[pick(A.scenari)];
+  const scenKey = pick(A.scenari);
+  const scen = SCENARI[scenKey];
+  const nar = SCENA[scenKey] || {};
   const prof = pick(A.personalita);
   const id = C.identita();
+  if(nar.eta) id.eta = pick(nar.eta);
+  if(nar.anni) id.anniCliente = pick(nar.anni);
   // reazioni + stat dalla personalità campionata
   const reaz = {emp:1,ins:1,rifor:1,prematura:1,soglia:3,minimizza:1,relazione:1};
   const stat = {...C.statBase};
@@ -640,7 +708,7 @@ function generaCliente(archId){
   // bisogni filtrati con priorità di scenario
   const BISOGNI={}, ORDINE=[];
   Object.keys(activeNeeds).forEach(nid=>{ const b=C.BISOGNI[nid]; if(!b)return;
-    BISOGNI[nid]={label:b.label, requisiti:b.requisiti, propostaIdeale:b.propostaIdeale, trappole:b.trappole||[], peso:activeNeeds[nid].peso, critico:!!activeNeeds[nid].critico};
+    BISOGNI[nid]={label:b.label, insight:b.insight, consap:b.consap, requisiti:b.requisiti, propostaIdeale:b.propostaIdeale, trappole:b.trappole||[], peso:activeNeeds[nid].peso, critico:!!activeNeeds[nid].critico};
     ORDINE.push(nid);
   });
   // info filtrate (testo da INFO_TESTO con slot)
@@ -666,399 +734,493 @@ function generaCliente(archId){
   return {
     archetipo:A.id, catalogo:A.catalogo, scenario:scen.label, paura:scen.paura, nome, difficolta:A.difficolta,
     registro:C.registro, voce, sogliaConsap:SOGLIA_CONSAP,
-    tratti:prof, reazioni:reaz, statBase:stat, identita:id, visibili:C.visibili.map(v=>fill(v,id)),
+    tratti:prof, reazioni:reaz, statBase:stat, identita:id, visibili:(nar.visibili||C.visibili).map(v=>fill(v,id)),
+    apertura:fill(nar.apertura||"Eccomi. Ho poco tempo, ma mi dica pure.",id),
     INFO, BISOGNI, ORDINE, PROPOSTE, DOMANDE, THEMES:C.THEMES, NEED_AREA:C.NEED_AREA,
     riga:`${id.eta} anni · ${id.mestiere}${id.f1?` · genitore`:""}`
   };
 }
 
 /* ============================================================
-   ENGINE (guidato da CL = cliente generato)
+   V9 — MACCHINA A FASI (stato-centrico)
+   Non si valuta il fare domande, ma l'accompagnare il cliente:
+   fidarsi → raccontarsi → comprendere → prendere posizione → agire.
    ============================================================ */
-let CL, S, needState, used, history, moves, discovered, convoEl, areaOpened;
-let curPriority, curP1exists, curBridgeExists, restWindow, restStreak, restituzioni;
+const SOGLIA_AVANZA = 68;
+const FASI = [
+  {id:1,nome:"Armonizzazione",breve:"crea relazione"},
+  {id:2,nome:"Esplorazione",breve:"comprendi il cliente"},
+  {id:3,nome:"Consapevolezza",breve:"genera consapevolezza"},
+  {id:4,nome:"Presa di posizione",breve:"fai riconoscere i bisogni"},
+  {id:5,nome:"Soluzione",breve:"proponi una risposta"}
+];
+// MODELLO DI ADERENZA: ogni fase ha mosse centrali, ammesse e una mossa-innesco (trigger)
+const FASE_CENTRALI={1:["relazione","empatia","osservazione"],2:["scoperta","riformulazione","ponte"],3:["consapevolezza","insight","implicazione","empatia","osservazione"],4:["emersione"],5:["proposta"]};
+const FASE_AMMESSE ={1:["riformulazione"],2:["relazione","empatia","osservazione"],3:["riformulazione","ponte"],4:["insight","empatia","riformulazione","ponte"],5:["empatia","riformulazione","insight"]};
+const AVANZA={1:["scoperta"],2:["implicazione","insight","consapevolezza"],3:["emersione"],4:["proposta"]}; // mosse che fanno avanzare di fase
+const NAT={relazione:1,empatia:1,osservazione:1,riformulazione:2,scoperta:2,ponte:2,implicazione:3,insight:3,consapevolezza:3,emersione:4,proposta:5,vendita:9};
+function isTrigger(fam,fase){return (AVANZA[fase]||[]).includes(fam);}
+function fitOf(fam,fase){
+  if((FASE_CENTRALI[fase]||[]).includes(fam))return"centrale";
+  if((FASE_AMMESSE[fase]||[]).includes(fam))return"ammessa";
+  if(isTrigger(fam,fase))return"trigger";
+  return (NAT[fam]||fase)>fase?"avanti":"indietro";
+}
+function famNode(q){return ({scoperta:"scoperta",relazione:"relazione",implicazione:"implicazione",ponte:"ponte",vendita:"vendita"})[q.tipo]||"scoperta";}
 
-function initRun(cliente){
+/* ---- stato ---- */
+let CL,S;
+function initFasi(cliente){
   CL=cliente;
-  S={...CL.statBase}; S.coerenza=0; S.pertinenza=0; S.coerenzaConv=0;
-  needState={}; CL.ORDINE.forEach(id=>needState[id]={discovered:false,illuminated:false});
-  used=new Set(); history=[]; moves=0; discovered=new Set(); areaOpened=new Set();
-  curPriority={}; curP1exists=false; curBridgeExists=false; restWindow=null; restStreak=0; restituzioni=[];
+  S={fase:1,prontezza:0,
+     fiducia:CL.statBase.fiducia,apertura:CL.statBase.apertura,pressione:CL.statBase.pressione,consapevolezza:CL.statBase.consapevolezza,
+     padronanza:50,coerenzaConv:50,
+     discovered:new Set(),areaOpened:new Set(),
+     used:new Set(),history:[],need:{},priorityNeed:null,
+     coperti:new Set(),consapProg:{},consapUsate:{},mosseTot:0};
+  CL.ORDINE.forEach(n=>S.need[n]="latente");
+  S.ledger={};[1,2,3,4,5].forEach(f=>S.ledger[f]={turni:0,centrali:0,fuori:0,regr:0});
 }
+const ILLUM=["illuminato","riconosciuto","prioritizzato","coperto"];
+const RICON=["riconosciuto","prioritizzato","coperto"];
 function dom(id){return CL.DOMANDE.find(x=>x.id===id);}
-function recomputeNeeds(){const f=[];CL.ORDINE.forEach(id=>{if(needState[id].discovered)return;if(CL.BISOGNI[id].requisiti.every(g=>g.some(i=>discovered.has(i)))){needState[id].discovered=true;f.push(id);}});return f;}
-function reqMet(r){if(!r)return true;if(r.opening)return true;if(r.info&&!r.info.every(i=>discovered.has(i)))return false;if(r.asked&&!r.asked.every(a=>used.has(a)))return false;if(r.need&&!(needState[r.need]&&needState[r.need].discovered))return false;if(r.apertura&&S.apertura<r.apertura)return false;if(r.areaOpen&&!areaOpened.has(r.areaOpen))return false;if(r.saturo&&!saturo(r.saturo))return false;if(r.needNot&&needState[r.needNot]&&needState[r.needNot].discovered)return false;return true;}
-function frontier(){return CL.DOMANDE.filter(q=>!used.has(q.id)&&reqMet(q.requires));}
-function themeDepth(t){const tg=CL.THEMES[t]||[];return history.filter(h=>(h.q.tags||[]).some(x=>tg.includes(x))).length;}
-function saturo(t){return themeDepth(t)>=SATURA;}
-function modConsap(base,q){ return (q.target&&q.target.indexOf("protezione")===0)? base*CL.reazioni.minimizza : base; }
-
-function lastQ(){ return history.length? history[history.length-1].q : null; }
-function recentTags(){ const s=new Set(); history.slice(-2).forEach(h=>(h.q.tags||[]).forEach(t=>s.add(t))); return s; }
-function classify(){
-  const avail=frontier(), last=lastQ();
-  const spawn=last&&last.spawns?last.spawns:[];
-  const rt=recentTags();
-  const p1=[],p2=[],p3=[],bridges=[];
-  avail.forEach(q=>{ if(q.tipo==="ponte"){bridges.push(q);return;} if(spawn.includes(q.id))p1.push(q); else if((q.tags||[]).some(t=>rt.has(t)))p2.push(q); else p3.push(q); });
-  const emo=last?last.emotion:null;
-  if(emo) p1.sort((a,b)=>((b.deepens===emo?1:0)-(a.deepens===emo?1:0)));
-  const bridgeEmphasis=bridges.length>0 && p1.length<=1;
-  return {p1,p2,p3,bridges,bridgeEmphasis,emo,last};
+function lastQ(){for(let i=S.history.length-1;i>=0;i--){if(S.history[i].q)return S.history[i].q;}return null;}
+function recentTags(){const s=new Set();S.history.slice(-2).forEach(h=>(h.tags||[]).forEach(t=>s.add(t)));return s;}
+function sogliaF1(){let f=60,a=50,p=24;if(CL.tratti.includes("diffidente")){f+=12;a+=8;}if(CL.tratti.includes("riservato"))a+=6;if(CL.tratti.includes("ansioso"))p-=4;return{f,a,p};}
+function themeDepth(t){const tg=CL.THEMES[t]||[];return S.history.filter(h=>(h.tags||[]).some(x=>tg.includes(x))).length;}
+function saturo(t){return themeDepth(t)>=2;}
+function recompute(){const fr=[];CL.ORDINE.forEach(n=>{if(S.need[n]!=="latente")return;if(CL.BISOGNI[n].requisiti.every(g=>g.some(i=>S.discovered.has(i)))){S.need[n]="emerso";fr.push(n);}});return fr;}
+function connTarget(){ // un bisogno 'emerso' con substrato da illuminare
+  let best=null,bn=0;
+  for(const n of CL.ORDINE){if(S.need[n]!=="emerso")continue;const c=[...S.discovered].filter(i=>(CL.INFO[i].bisogni||[]).includes(n)).length;if(c>bn){bn=c;best=n;}}
+  return best;
 }
+function prontezza(){
+  const f=S.fase;
+  if(f===1){const s=sogliaF1();const r=Math.min(S.fiducia/s.f,S.apertura/s.a);const pen=S.pressione>s.p?(S.pressione-s.p)*2:0;return clamp(r*100-pen);}
+  if(f===2){const em=CL.ORDINE.filter(n=>S.need[n]!=="latente").length;return clamp(em*30+(connTarget()?22:0)+Math.min(S.discovered.size,5)*7);}
+  if(f===3){const il=CL.ORDINE.filter(n=>ILLUM.includes(S.need[n]));const crit=il.some(n=>CL.BISOGNI[n].critico);if(crit)return clamp(62+(S.consapevolezza/CL.sogliaConsap)*38);return clamp((S.consapevolezza/CL.sogliaConsap)*45+il.length*14);}
+  if(f===4){const ric=CL.ORDINE.filter(n=>RICON.includes(S.need[n])).length;return clamp(ric*45+(S.priorityNeed?45:0));}
+  return 100;
+}
+function reqMet(r){if(!r)return true;if(r.opening)return true;if(r.info&&!r.info.every(i=>S.discovered.has(i)))return false;if(r.asked&&!r.asked.every(a=>S.used.has(a)))return false;if(r.need&&!(S.need[r.need]&&S.need[r.need]!=="latente"))return false;if(r.apertura&&S.apertura<r.apertura)return false;if(r.areaOpen&&!S.areaOpened.has(r.areaOpen))return false;if(r.saturo&&!saturo(r.saturo))return false;if(r.needNot&&S.need[r.needNot]&&S.need[r.needNot]!=="latente")return false;return true;}
+function frontier(){return CL.DOMANDE.filter(q=>!S.used.has(q.id)&&reqMet(q.requires));}
 
-/* ---- significatività e connessioni (per la restituzione) ---- */
-function connectionTarget(){
-  for(const nid of CL.ORDINE){ const ns=needState[nid]; if(ns.illuminated) continue;
-    const contrib=[...discovered].filter(i=>CL.INFO[i]&&(CL.INFO[i].bisogni||[]).includes(nid));
-    if(contrib.length>=2) return nid;
-    if(ns.discovered && contrib.length>=1) return nid;
+/* ---- mosse disponibili (operatori) ---- */
+function mosse(){
+  const out=[];
+  frontier().forEach(q=>{ if(q.tipo==="implicazione" && CL.BISOGNI[q.target] && CL.BISOGNI[q.target].consap) return; out.push({k:"q:"+q.id,fam:famNode(q),node:q,label:q.testo,badge:q.cat,tipo:q.tipo}); });
+  // CONSAPEVOLEZZA (Fase 3): mosse generate dal contenuto del bisogno, finché è 'emerso'
+  CL.ORDINE.forEach(n=>{ const C=CL.BISOGNI[n].consap; if(!C) return; if(S.need[n]!=="emerso") return;
+    ["osservazione","curiosita","proiezione","contrasto","implicazione"].forEach(sub=>{
+      out.push({k:"k:"+sub+":"+n,fam:"consapevolezza",sub,target:n,label:C[sub],badge:sub,tipo:"consapevolezza"}); }); });
+  if(S.history.length){
+    const lq=lastQ();
+    if(lq){
+      const opts=restOptions();
+      const r=opts.find(o=>o.tipo==="riformulazione");if(r)out.push({k:"r:rifor",fam:"riformulazione",rest:r,label:r.testo,badge:"riformulazione",tipo:"restituzione"});
+      const e=opts.find(o=>o.tipo==="empatia");if(e)out.push({k:"r:emp",fam:"empatia",rest:e,label:e.testo,badge:"empatia",tipo:"restituzione"});
+      out.push({k:"r:oss",fam:"osservazione",rest:{tipo:"osservazione",testo:pick(["Noto che su questo punto cambia tono.","Mi accorgo che questo tema la tocca più di altri.","Vedo che qui rallenta, come se pesasse."])},label:"(osservazione) "+"Noto un cambiamento mentre ne parla.",badge:"osservazione",tipo:"restituzione"});
+      const tgt=connTarget();
+      const ins=opts.find(o=>o.tipo==="insight");
+      if(ins)out.push({k:"r:ins",fam:"insight",rest:ins,label:ins.testo,badge:"insight",tipo:"restituzione",target:tgt});
+    }
   }
-  return null;
-}
-function isSignificant(q,fresh){
-  if(!q||q.tipo==="vendita"||q.tipo==="ponte") return false;
-  if(CHARGED.includes(q.emotion)) return true;
-  const lvl=Math.max(0,...((q.rivela||[]).map(i=>CL.INFO[i]?CL.INFO[i].livello:0)));
-  if(lvl>=2) return true;
-  if(fresh&&fresh.length) return true;
-  if(connectionTarget()) return true;
-  return false;
+  // emersione (Fase 4)
+  const illum=CL.ORDINE.filter(n=>S.need[n]==="illuminato");
+  if(illum.length) out.push({k:"e:sintesi",fam:"emersione",emers:"sintesi",label:"Riepiloghi ciò che è emerso e lo specchi al cliente.",badge:"sintesi bisogni",tipo:"emersione"});
+  const ricon=CL.ORDINE.filter(n=>RICON.includes(S.need[n]));
+  if(ricon.length && !S.priorityNeed) out.push({k:"e:posizione",fam:"emersione",emers:"posizione",label:"«Se potesse occuparsi di una cosa sola, adesso, quale sarebbe?»",badge:"presa di posizione",tipo:"emersione"});
+  // proposte (Fase 5) — solo per bisogni riconosciuti
+  const perProp=CL.ORDINE.filter(n=>RICON.includes(S.need[n])&&!S.coperti.has(n));
+  perProp.forEach(n=>{Object.entries(CL.PROPOSTE).filter(([pid,p])=>p.bisogno===n).forEach(([pid,p])=>{
+    out.push({k:"p:"+pid,fam:"proposta",prop:pid,bisogno:n,label:"Proponi: "+p.nome,badge:"proposta",tipo:"proposta"});
+  });});
+  return out;
 }
 
-/* ============================================================
-   EMOZIONI / PARAVERBALE
-   ============================================================ */
-function emotionState(d){
-  if(S.pressione>=55)return"Irritato"; if(S.pressione>=32)return"Diffidente";
-  if(d&&d.consap>0&&S.consapevolezza>=28)return"Interessato";
-  if(S.fiducia>=65&&S.apertura>=52&&S.pressione<=20)return"Coinvolto";
-  if(S.fiducia>=55&&S.pressione<=22)return"Sereno"; return"Prudente";
+/* ---- testi restituzione (riuso) ---- */
+const REST_TESTO={
+  riformulazione:{
+    default:["Se ho capito bene, per lei questo conta più di quanto sembri.","Quindi, se la seguo, qui c'è in gioco molto più di un dettaglio."],
+    attività:["Se ho capito bene, quell'attività per lei è molto più di un lavoro.","Quindi quel negozio, per lei, non è solo lavoro: è la sua vita."],
+    figli:["Quindi, in fondo, tutto ruota attorno al futuro dei suoi figli."],
+    pensione:["Quindi al 'dopo' finora non ha mai dato una forma."],
+    liquidità:["Mi par di capire che quei soldi fermi siano più un peso che una scelta."],
+    lavoro:["Se la seguo, tutto quello che costruisce passa solo dalle sue mani."]
+  },
+  empatia:{
+    nostalgia:["Immagino cosa significhi portare avanti ciò che le è stato lasciato."],
+    orgoglio:["Si sente il valore di ciò che ha costruito con le sue mani."],
+    paura:["Capisco che sia un pensiero che pesa, e che non sia facile dirlo."],
+    preoccupazione:["Sento che questa cosa la tiene in tensione più di quanto dica."],
+    default:["Immagino che per lei non sia un tema da poco."]
+  },
+  insight:{default:["Da ciò che mi dice emerge un collegamento che vale la pena guardare insieme."]}
+};
+function restOptions(){
+  const last=lastQ();if(!last)return[];
+  const tag=(last.tags||[]).find(t=>REST_TESTO.riformulazione[t])||"default";
+  const opts=[{tipo:"riformulazione",testo:pick(REST_TESTO.riformulazione[tag]||REST_TESTO.riformulazione.default)}];
+  const emo=last.emotion;
+  opts.push({tipo:"empatia",testo:pick((emo&&REST_TESTO.empatia[emo])?REST_TESTO.empatia[emo]:REST_TESTO.empatia.default),emo});
+  const tgt=connTarget();
+  if(tgt)opts.push({tipo:"insight",testo:(CL.BISOGNI[tgt].insight||`Da ciò che mi racconta, tutto questo si lega a ${CL.BISOGNI[tgt].label.toLowerCase()}.`),target:tgt});
+  else opts.push({tipo:"insight",testo:pick(REST_TESTO.insight.default),target:null});
+  return opts;
 }
+
+/* ---- emozioni / cue ---- */
+function emotionState(){
+  if(S.pressione>=55)return"Irritato";if(S.pressione>=32)return"Diffidente";
+  if(S.consapevolezza>=28&&S.fase>=3)return"Interessato";
+  if(S.fiducia>=65&&S.apertura>=52&&S.pressione<=20)return"Coinvolto";
+  if(S.fiducia>=55&&S.pressione<=22)return"Sereno";return"Prudente";}
 const EMO_COLOR={Sereno:"#0f766e",Prudente:"#64748b",Interessato:"#2563eb",Coinvolto:"#7c3aed",Diffidente:"#b45309",Irritato:"#dc2626"};
 const EMO_BG={Sereno:"#e7f3f1",Prudente:"#eef2f6",Interessato:"#e7f0fb",Coinvolto:"#f0eafb",Diffidente:"#fbf0e3",Irritato:"#fbeaea"};
-const STATE_CUES={Coinvolto:["si sporge in avanti, coinvolto","annuisce con convinzione"],Interessato:["inclina la testa, incuriosito","la guarda con più attenzione"],Sereno:["annuisce tranquillo","si rilassa sulla sedia"],Prudente:["misura le parole","la osserva un istante"],Diffidente:["incrocia le braccia","cambia posizione"],Irritato:["sospira e guarda l'orologio","si irrigidisce"]};
-const ANS_CUES={nostalgia:["sorride con nostalgia","lo sguardo si perde lontano"],orgoglio:["si raddrizza, orgoglioso","gli si illumina il viso"],paura:["abbassa lo sguardo","la voce si fa più bassa"],preoccupazione:["si fa serio, una ruga sulla fronte","sospira pensieroso"]};
-function cueFor(ansEmo,stateEmo,dp){ if(dp>5)return pick(STATE_CUES.Irritato); if(ansEmo&&ANS_CUES[ansEmo])return pick(ANS_CUES[ansEmo]); return pick(STATE_CUES[stateEmo]||STATE_CUES.Prudente); }
-const EMO_WORD={nostalgia:"nostalgico",orgoglio:"fiero",paura:"timoroso",preoccupazione:"preoccupato"};
+const CUES={Coinvolto:["si sporge in avanti","annuisce con convinzione"],Interessato:["inclina la testa, incuriosito"],Sereno:["annuisce tranquillo"],Prudente:["misura le parole"],Diffidente:["incrocia le braccia"],Irritato:["sospira, guarda l'orologio"]};
+const ANS_CUES={nostalgia:["lo sguardo si perde lontano"],orgoglio:["si raddrizza, fiero"],paura:["abbassa la voce"],preoccupazione:["una ruga sulla fronte"]};
+
+/* ============================================================
+   PLAY — operatore unico sullo stato
+   ============================================================ */
+let convoEl;
+function addMsg(kind,html){const d=document.createElement("div");d.className="msg "+kind;d.innerHTML=html;convoEl.appendChild(d);convoEl.scrollTop=convoEl.scrollHeight;}
+function fn(){return CL.nome.split(" ")[0];}
+
+function play(m){
+  S.mosseTot++;
+  const fam=m.fam;
+  // avanzamento guidato: solo la mossa-innesco della fase, con prontezza sufficiente
+  let avanzato=null;
+  const illumExists=CL.ORDINE.some(n=>S.need[n]==="illuminato"||RICON.includes(S.need[n]));
+  if(isTrigger(fam,S.fase) && prontezza()>=SOGLIA_AVANZA && (fam!=="proposta"||S.priorityNeed) && (fam!=="emersione"||illumExists)){ S.fase=S.fase+1; avanzato=S.fase; }
+  const fit=fitOf(fam,S.fase);
+  S.ledger[S.fase].turni++;
+  if(fit==="centrale")S.ledger[S.fase].centrali++;
+  if(fit==="avanti"||fit==="trigger")S.ledger[S.fase].fuori++;
+
+  if(m.tipo==="restituzione") return playRest(m,fit);
+  if(m.tipo==="emersione") return playEmersione(m,fit,avanzato);
+  if(m.tipo==="proposta") return playProposta(m,fit,avanzato);
+  if(m.tipo==="consapevolezza") return playConsap(m,fit,avanzato);
+  return playDomanda(m,fit,avanzato);
+}
+
+function bandFeedback(avanzato,fit,extra){
+  if(avanzato){addMsg("sys ok",`→ Sei passato alla <b>Fase ${avanzato} · ${FASI[avanzato-1].nome}</b>.`);}
+  if(extra)addMsg(extra.cls,extra.txt);
+}
+function clamps(){["fiducia","apertura","pressione","consapevolezza","padronanza","coerenzaConv"].forEach(k=>S[k]=clamp(S[k]));}
+
+function playDomanda(m,fit,avanzato){
+  const q=m.node; S.used.add(q.id);
+  const eff={...(q.eff||{})};
+  // regressione: scoperta quando fase>=3
+  let nota=null;
+  if(m.fam==="scoperta" && S.fase>=3){
+    const legit = (q.rivela||[]).some(i=>!S.discovered.has(i));
+    if(legit){ S.ledger[S.fase].regr++; S.padronanza+=2; nota={cls:"sys thread",txt:`↩ Rientri un attimo in Esplorazione sull'area appena aperta: è una regressione legittima.`}; }
+    else { S.coerenzaConv-=6; S.pressione+=3; S.padronanza-=2; S.ledger[S.fase].fuori++; nota={cls:"sys bad",txt:`Stai raccogliendo dati in fase di Consapevolezza: «questo me l'ha già detto». La consapevolezza non cresce così.`}; }
+  }
+  // fuori fase in avanti / innesco prematuro (prontezza insufficiente)
+  if(fit==="avanti"||fit==="trigger"){
+    const dist=Math.max(1,(NAT[m.fam]||S.fase)-S.fase);
+    S.pressione+=4*dist; S.fiducia-=2*dist; S.padronanza-=3+dist;
+    nota={cls:"sys bad",txt:`Mossa fuori fase (anticipata di ${dist}): in ${FASI[S.fase-1].nome} è troppo presto. ${fn()} si irrigidisce.`};
+  }else if(fit==="centrale"){S.padronanza+=3;}
+  // applica effetti (smorzati se fuori fase)
+  const mult=(fit==="avanti"||fit==="trigger")?0.4:1;
+  if((q.tipo==="relazione"||q.tipo==="scoperta")&&eff.fiducia>0)eff.fiducia*=CL.reazioni.relazione;
+  S.fiducia+=(eff.fiducia||0)*mult; S.apertura+=(eff.apertura||0)*mult; S.pressione+=(eff.pressione||0);
+  if(q.tipo==="ponte"){S.areaOpened.add(q.opens);}
+  (q.rivela||[]).forEach(i=>S.discovered.add(i));
+  const fresh=recompute();
+  let illuminated=null;
+  if(q.tipo==="implicazione"&&S.need[q.target]==="emerso"){const g=(q.target.indexOf("protezione")===0)?CL.reazioni.minimizza:1;S.consapevolezza+=Math.round(q.consapBase*g);S.need[q.target]="illuminato";illuminated=q.target;}
+  // continuità
+  const rt=recentTags();const cont=(q.tags||[]).some(t=>rt.has(t));S.coerenzaConv+=cont?2:(fit==="centrale"?0:-2);
+  S.history.push({q,tags:q.tags||[],emotion:q.emotion,fit});
+  clamps();
+  // render messaggi
+  const myText=q.tipo==="ponte"?`<span style="opacity:.85">${q.framing}</span><br><br>${q.testo}`:q.testo;
+  addMsg("me",`<div class="txt">${myText}</div>`);
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${q.reply}</div>`);
+  const st=emotionState();const cue=q.emotion&&ANS_CUES[q.emotion]?pick(ANS_CUES[q.emotion]):pick(CUES[st]||CUES.Prudente);
+  addMsg("cue",`${fn()} ${cue}.`);
+  bandFeedback(avanzato,fit,nota);
+  (q.rivela||[]).forEach(i=>{if(S.discovered.has(i))addMsg("sys",`Scoperto: ${CL.INFO[i].testo}`);});
+  fresh.forEach(i=>addMsg("sys need",`★ Area di attenzione emersa: <b>${CL.BISOGNI[i].label}</b>.`));
+  if(illuminated)addMsg("sys need",`↑ Consapevolezza generata su <b>${CL.BISOGNI[illuminated].label}</b>.`);
+  if(q.tipo==="vendita")addMsg("sys bad",`Spinta di vendita: brucia la fiducia.`);
+  postTurn();
+}
+
+function playRest(m,fit){
+  const o=m.rest, r=CL.reazioni;
+  addMsg("me rest",`<div class="txt">${o.testo}</div>`);
+  // fit di contesto (oltre alla fase)
+  let causa=null;
+  if(o.tipo==="empatia"&&!CHARGED.includes((lastQ()||{}).emotion))causa="empatia_neutra";
+  if(o.tipo==="insight"&&!o.target)causa="insight_vuoto";
+  const fuoriFase=(fit==="avanti"||fit==="indietro");
+  if(causa||fuoriFase){
+    S.fiducia-=3*r.prematura;S.apertura-=2;S.pressione+=4*r.prematura;S.padronanza-=3;
+    const linea=causa?reazioneArtificiale(causa,CL.tratti):pick(["Mi sembra che stia correndo.","Aspetti, non così in fretta."]);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${linea}</div>`);
+    addMsg("cue",`${fn()} ${pick(CUES.Diffidente)}.`);
+    if(fuoriFase&&!causa)addMsg("sys bad",`Restituzione fuori fase: in ${FASI[S.fase-1].nome} non è il momento.`);
+  } else {
+    if(o.tipo==="riformulazione"){S.fiducia+=4*r.rifor*r.relazione;S.apertura+=4*r.rifor;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("riformulazione")}</div>`);}
+    else if(o.tipo==="empatia"){S.fiducia+=5*r.emp;S.apertura+=4*r.emp;S.pressione-=3*r.emp;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("empatia")}</div>`);}
+    else if(o.tipo==="osservazione"){S.fiducia+=3;S.apertura+=3;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["...Sì. È vero, non me ne rendevo conto.","Eh. Si vede tanto?"])}</div>`);}
+    else if(o.tipo==="insight"){const g=Math.round(12*r.ins);S.consapevolezza+=g;const t=o.target;if(t&&S.need[t]==="emerso"){S.need[t]="illuminato";const area=CL.NEED_AREA[t];if(area&&!S.areaOpened.has(area)){S.areaOpened.add(area);addMsg("sys thread",`La tua sintesi apre una nuova area: <b>${CL.BISOGNI[t].label}</b>.`);}addMsg("sys need",`↑ Hai reso consapevole <b>${CL.BISOGNI[t].label}</b> (+${g}).`);}S.fiducia+=2;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("insight")}</div>`);}
+    S.coerenzaConv+=3; if(fit==="centrale")S.padronanza+=3;
+    addMsg("cue",`${fn()} ${pick(CUES.Coinvolto.concat(CUES.Interessato))}.`);
+  }
+  S.history.push({rest:o.tipo,tags:(lastQ()||{}).tags||[],emotion:(lastQ()||{}).emotion,fit});
+  clamps();postTurn();
+}
+
+function playEmersione(m,fit,avanzato){
+  if(fit==="avanti"){ // prematuro
+    S.pressione+=8;S.fiducia-=3;S.padronanza-=4;
+    addMsg("me",`<div class="txt">${m.label}</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Aspetti, di cosa stiamo parlando esattamente?","Mi sta mettendo fretta su cose che non ho ancora messo a fuoco."])}</div>`);
+    addMsg("sys bad",`Emersione prematura: il cliente non ha ancora «visto» abbastanza.`);
+    S.history.push({tags:[],emotion:null,fit});clamps();postTurn();return;
+  }
+  if(m.emers==="sintesi"){
+    const ill=CL.ORDINE.filter(n=>S.need[n]==="illuminato");
+    ill.forEach(n=>S.need[n]="riconosciuto");
+    const labels=CL.ORDINE.filter(n=>RICON.includes(S.need[n])).map(n=>CL.BISOGNI[n].label.toLowerCase());
+    addMsg("me",`<div class="txt">Mettiamo in fila ciò che è emerso: ${labels.join(", ")}. Sono cose che la riguardano da vicino.</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["...Sì. Detta così, sono cose mie. Non le avevo mai messe in fila.","Eh. Riconosco che è proprio la mia situazione."])}</div>`);
+    addMsg("sys need",`I bisogni illuminati diventano <b>riconosciuti</b> dal cliente.`);
+    S.padronanza+= (fit==="centrale")?4:0; S.consapevolezza+=4;
+  } else { // presa di posizione
+    const cand=CL.ORDINE.filter(n=>RICON.includes(S.need[n]));
+    const crit=cand.find(n=>CL.BISOGNI[n].critico)||cand.sort((a,b)=>CL.BISOGNI[b].peso-CL.BISOGNI[a].peso)[0];
+    S.priorityNeed=crit; if(crit)S.need[crit]="prioritizzato";
+    addMsg("me",`<div class="txt">${m.label}</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${crit?`${pick(["Questo, senza dubbio:","Se devo scegliere,"])} ${CL.BISOGNI[crit].label.toLowerCase()}. ${CL.paura}`:"Non saprei da dove iniziare."}</div>`);
+    addMsg("cue",`${fn()} ${pick(["prende posizione, con fermezza","abbassa lo sguardo, poi annuisce deciso"])}.`);
+    if(crit)addMsg("sys need",`Il cliente prende posizione: <b>${CL.BISOGNI[crit].label}</b> è la priorità.`);
+    S.padronanza+=(fit==="centrale")?5:0; S.fiducia+=3;
+  }
+  S.history.push({tags:[],emotion:null,fit});bandFeedback(avanzato,fit,null);clamps();postTurn();
+}
+
+function playProposta(m,fit,avanzato){
+  const p=CL.PROPOSTE[m.prop], n=m.bisogno;
+  addMsg("me",`<div class="txt">Per ${CL.BISOGNI[n].label.toLowerCase()}, le propongo: ${p.nome}. ${p.desc}</div>`);
+  const riconosciuto=RICON.includes(S.need[n]);
+  if(!riconosciuto){
+    S.pressione+=10;S.fiducia-=4;S.padronanza-=4;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">Ma di questo non abbiamo nemmeno parlato davvero. Mi sembra una proposta a freddo.</div>`);
+    addMsg("sys bad",`Proposta per un bisogno non riconosciuto: salta la presa di posizione.`);
+  } else if(p.pert<55){
+    S.pressione+=6;S.padronanza-=3;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Non mi pare la cosa più adatta a me.","Mah, non la sento giusta per la mia situazione."])}</div>`);
+    addMsg("sys bad",`Soluzione poco pertinente al profilo (pertinenza ${p.pert}).`);
+  } else {
+    S.coperti.add(n);S.need[n]="coperto";S.fiducia+=4;S.padronanza+=4;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Questa sì che risponde a quello che le ho detto. Mi interessa.","Ecco, così ha senso. Procediamo a capirla meglio."])}</div>`);
+    addMsg("sys need",`<b>${CL.BISOGNI[n].label}</b> trova una risposta pertinente (pertinenza ${p.pert}).`);
+  }
+  S.history.push({tags:[],emotion:null,fit,prop:m.prop,bisogno:n,pert:p.pert,riconosciuto});
+  bandFeedback(avanzato,fit,null);clamps();postTurn();
+}
+
+function qualitaConsap(sub){
+  const base={osservazione:52,curiosita:70,proiezione:66,contrasto:58,implicazione:60}[sub];
+  let q=base+(S.fiducia-50)*0.30+(S.apertura-50)*0.30+(Math.random()*24-12);
+  const SH={
+    diffidente:{implicazione:-16,contrasto:-10,proiezione:-4,curiosita:-3},
+    razionale:{implicazione:-8,curiosita:6,contrasto:2,proiezione:-3},
+    ansioso:{proiezione:10,implicazione:-8,contrasto:-3},
+    ottimista:{osservazione:-6,curiosita:-6,proiezione:-6,contrasto:-6,implicazione:-6},
+    orgoglioso:{contrasto:-10,curiosita:3},
+    sbrigativo:{proiezione:-10,curiosita:5,osservazione:-3},
+    riservato:{curiosita:-3,osservazione:-2,proiezione:-2},
+    storico:{contrasto:-5,proiezione:3}
+  };
+  (CL.tratti||[]).forEach(tr=>{const sh=SH[tr];if(sh&&sh[sub]!=null)q+=sh[sub];});
+  return q;
+}
+function esitoConsap(sub,n){
+  if(S.need[n]!=="emerso") return "ripetuto";
+  const q=qualitaConsap(sub);
+  const minim=(CL.reazioni.minimizza>1)||CL.tratti.includes("ottimista");
+  const arg=CL.tratti.includes("diffidente")||CL.tratti.includes("razionale")||CL.tratti.includes("orgoglioso");
+  if(q>=70) return "piena";
+  if(q>=50) return (minim&&(sub==="implicazione"||sub==="contrasto")&&Math.random()<0.4)?"minimizza":"parziale";
+  if(q>=34) return minim?"minimizza":"resiste";
+  return arg?"controarg":"resiste";
+}
+function playConsap(m,fit,avanzato){
+  const n=m.target, sub=m.sub, C=CL.BISOGNI[n].consap;
+  addMsg("me",`<div class="txt">${C[sub]}</div>`);
+  if(fit==="avanti"||fit==="trigger"){
+    const dist=Math.max(1,3-S.fase);
+    S.pressione+=5+dist*2; S.fiducia-=2; S.padronanza-=3;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Aspetti, non stiamo correndo un po'?","Mi sta già tirando le somme, ma non le ho ancora raccontato tutto."])}</div>`);
+    addMsg("cue",`${fn()} ${pick(CUES.Diffidente)}.`);
+    addMsg("sys bad",`Consapevolezza fuori tempo: porti a una conclusione prima di aver esplorato.`);
+    S.history.push({consap:sub,target:n,tags:[],fit}); clamps(); postTurn(); return;
+  }
+  const esito=esitoConsap(sub,n);
+  const PRGpiena={osservazione:30,curiosita:50,proiezione:46,contrasto:42,implicazione:44};
+  const PADpiena={osservazione:3,curiosita:7,proiezione:6,contrasto:4,implicazione:2};
+  const PADparz ={osservazione:2,curiosita:3,proiezione:3,contrasto:2,implicazione:1};
+  const PRESS_SUB={osservazione:0,curiosita:0,proiezione:1,contrasto:4,implicazione:7};
+  let dprog={piena:PRGpiena[sub],parziale:24,resiste:8,minimizza:3,controarg:0,ripetuto:0}[esito];
+  let dpad ={piena:PADpiena[sub],parziale:PADparz[sub],resiste:-1,minimizza:-1,controarg:-3,ripetuto:-2}[esito];
+  let dpress=PRESS_SUB[sub];
+  if(esito==="controarg") dpress+=3+PRESS_SUB[sub];
+  else if(esito==="resiste") dpress+=2;
+  else if(esito==="minimizza") dpress+=1;
+  S.consapUsate[n]=S.consapUsate[n]||[];
+  if(sub==="implicazione" && !S.consapUsate[n].some(x=>x!=="implicazione")){
+    dpad-=2; addMsg("sys bad",`Hai detto la conclusione invece di farla scoprire: in Consapevolezza la stoccata diretta costa.`);
+  }
+  S.consapUsate[n].push(sub);
+  S.consapProg[n]=(S.consapProg[n]||0)+dprog;
+  S.consapevolezza+=Math.round(dprog*0.45);
+  S.pressione+=dpress; S.padronanza+=dpad;
+  if(esito==="piena"&&(sub==="curiosita"||sub==="proiezione"))S.apertura+=3;
+  if(esito==="minimizza")S.apertura-=2; if(esito==="controarg")S.apertura-=1;
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(C.reazioni[esito]||C.reazioni.parziale)}</div>`);
+  const cueMap={piena:"Coinvolto",parziale:"Interessato",resiste:"Prudente",minimizza:"Prudente",controarg:"Diffidente",ripetuto:"Prudente"};
+  addMsg("cue",`${fn()} ${pick(CUES[cueMap[esito]]||CUES.Prudente)}.`);
+  if(S.need[n]==="emerso" && S.consapProg[n]>=55){S.need[n]="illuminato";addMsg("sys need",`↑ <b>${CL.BISOGNI[n].label}</b>: il cliente ne ha preso coscienza.`);}
+  else if(S.need[n]==="emerso"){addMsg("sys",`(Presa di coscienza in costruzione su ${CL.BISOGNI[n].label.toLowerCase()}: ${Math.min(99,Math.round(S.consapProg[n]))}%.)`);}
+  const lab={piena:"Piena presa di coscienza",parziale:"Consapevolezza parziale",resiste:"Resiste",minimizza:"Minimizza",controarg:"Controargomenta",ripetuto:"Già acquisito"}[esito];
+  addMsg("sys",`${sub} · ${lab}`);
+  S.history.push({consap:sub,target:n,esito,tags:[],fit});
+  clamps(); bandFeedback(avanzato,fit,null); postTurn();
+}
+
+function postTurn(){
+  S.prontezza=prontezza();
+  renderTop();renderDossier();renderMosse();
+  setStatus();
+  if(S.mosseTot>=26)addMsg("sys",`(Il tempo del colloquio è quasi finito.)`);
+}
 
 /* ============================================================
    RENDER
    ============================================================ */
-function renderStrip(){$("moves").innerHTML=`Mosse <b>${moves}</b>/${MAX_MOVES}`;
+function setStatus(){const e=emotionState();$("emo").textContent=e;$("emo").style.color=EMO_COLOR[e];$("emo").style.background=EMO_BG[e];}
+function renderTop(){
+  $("moves").innerHTML=`Mosse <b>${S.mosseTot}</b>`;
   const d=[["Fiducia","fiducia","--c-fiducia"],["Apertura","apertura","--c-apertura"],["Pressione","pressione","--c-pressione"],["Consap.","consapevolezza","--c-consap"]];
-  $("strip").innerHTML=d.map(([l,k,c])=>`<div class="chip"><div class="h">${l}<b>${S[k]}</b></div><div class="bar"><i style="width:${S[k]}%;background:var(${c})"></i></div></div>`).join("");}
+  $("strip").innerHTML=d.map(([l,k,c])=>`<div class="chip"><div class="h">${l}<b>${Math.round(S[k])}</b></div><div class="bar"><i style="width:${S[k]}%;background:var(${c})"></i></div></div>`).join("");
+  // stepper fasi
+  const step=FASI.map(f=>`<div class="fstep ${f.id===S.fase?'on':(f.id<S.fase?'done':'')}"><span class="fn">${f.id}</span><span class="fl">${f.nome}</span></div>`).join('<span class="farrow">›</span>');
+  const pr=Math.round(S.prontezza);
+  const ready=pr>=SOGLIA_AVANZA && S.fase<5;
+  $("phasebar").innerHTML=`<div class="fsteps">${step}</div>
+    <div class="prontezza"><div class="pl">Prontezza · ${FASI[S.fase-1].breve}</div><div class="pbar"><i style="width:${pr}%;background:${ready?'#0f766e':'#94a3b8'}"></i></div>${ready?'<div class="pready">Pronto per la fase successiva</div>':''}</div>
+    <div class="pmastery">Padronanza del Metodo: <b>${Math.round(S.padronanza)}</b></div>`;
+}
 function renderDossier(){
   const vis=CL.visibili.map(t=>`<div class="item">${t}</div>`).join("");
-  const sco=discovered.size?[...discovered].map(i=>`<div class="item">${CL.INFO[i].testo}</div>`).join(""):`<div class="empty">Nessuna ancora.</div>`;
-  let bis="";const known=CL.ORDINE.filter(i=>needState[i].discovered),unknown=CL.ORDINE.filter(i=>!needState[i].discovered);
-  known.forEach(i=>{const n=CL.BISOGNI[i],ns=needState[i];let t="";if(n.critico)t+=`<span class="tag crit">critico</span>`;t+=`<span class="tag disc">scoperto</span>`;if(ns.illuminated)t+=`<span class="tag illum">consapevole</span>`;bis+=`<div class="need"><span>${n.label}</span><span class="tags">${t}</span></div>`;});
-  unknown.forEach(()=>bis+=`<div class="need locked"><span>??? — non emerso</span></div>`);
+  const sco=S.discovered.size?[...S.discovered].map(i=>`<div class="item">${CL.INFO[i].testo}</div>`).join(""):`<div class="empty">Nessuna ancora.</div>`;
+  const STAGE={latente:"",emerso:'<span class="tag disc">emerso</span>',illuminato:'<span class="tag illum">illuminato</span>',riconosciuto:'<span class="tag ric">riconosciuto</span>',prioritizzato:'<span class="tag pri">priorità</span>',coperto:'<span class="tag cov">coperto</span>'};
+  let bis="";CL.ORDINE.forEach(n=>{const st=S.need[n];if(st==="latente"){bis+=`<div class="need locked"><span>??? — non emerso</span></div>`;return;}let t=(CL.BISOGNI[n].critico?'<span class="tag crit">critico</span>':'')+STAGE[st];bis+=`<div class="need"><span>${CL.BISOGNI[n].label}</span><span class="tags">${t}</span></div>`;});
   $("dossier").innerHTML=`<div class="group"><h4>Visibili</h4>${vis}</div><div class="group"><h4>Scoperte</h4>${sco}</div><div class="group"><h4>Bisogni</h4>${bis}</div>`;
 }
-function renderMemline(){
-  const last=lastQ(); if(!last){$("memline").innerHTML="Conversazione appena iniziata.";return;}
-  const tags=[...recentTags()]; let s=tags.length?`Filo attuale: <b>${tags.join(" · ")}</b>`:"";
-  if(last.emotion&&EMO_WORD[last.emotion]) s+=` — ${CL.nome.split(" ")[0]} è sul ${EMO_WORD[last.emotion]}`;
-  $("memline").innerHTML=s;
-}
-function addMsg(kind,html){const d=document.createElement("div");d.className="msg "+kind;d.innerHTML=html;convoEl.appendChild(d);convoEl.scrollTop=convoEl.scrollHeight;}
-function setStatus(emo,cue){$("emo").textContent=emo;$("emo").style.color=EMO_COLOR[emo];$("emo").style.background=EMO_BG[emo];$("cuenow").textContent="“"+cue+"”";}
-
-/* ---- restituzioni disponibili nella finestra ---- */
-const REST_TESTO = {
-  riformulazione:{
-    default:["Se ho capito bene, per lei questo conta molto più di quanto sembri.","Quindi, se la seguo, qui c'è in gioco molto più di quanto dica."],
-    attività:["Se ho capito bene, quell'attività per lei è molto più di un lavoro.","Quindi quel negozio, per lei, non è solo lavoro: è la sua vita."],
-    figli:["Quindi, in fondo, tutto ruota attorno al futuro dei suoi figli.","Se la seguo, il filo che tiene insieme tutto sono i ragazzi."],
-    pensione:["Quindi oggi, per il dopo, non c'è ancora un piano vero.","Se ho capito, al 'dopo' finora non ha mai dato una forma."],
-    liquidità:["Mi par di capire che quei soldi fermi siano più un peso che una scelta.","Quindi quella liquidità ferma, in fondo, la tiene in apprensione."],
-    lavoro:["Se la seguo, tutto quello che costruisce passa solo dalle sue mani.","Quindi oggi il motore di tutto è lei, soltanto lei."]
-  },
-  empatia:{
-    nostalgia:["Immagino cosa significhi portare avanti ciò che le è stato lasciato.","Sento che dietro a questo c'è una storia che la tocca da vicino."],
-    orgoglio:["Si sente il valore di ciò che ha costruito con le sue mani.","Capisco l'orgoglio: una cosa così non te la regala nessuno."],
-    paura:["Capisco che sia un pensiero che pesa, e che non sia facile dirlo ad alta voce.","Dev'essere un peso da portare, anche solo a nominarlo."],
-    preoccupazione:["Sento che questa cosa la tiene in tensione più di quanto dica.","Percepisco che ci pensa più spesso di quanto lasci vedere."],
-    default:["Immagino che per lei non sia un tema da poco.","Sento che ci tiene, a questo."]
-  },
-  insight:{
-    default:["Da ciò che mi dice, emerge un collegamento che forse vale la pena guardare insieme."]
-  }
-};
-function restOptions(){
-  const last=lastQ(); if(!last) return [];
-  const tagMain=(last.tags||[]).find(t=>REST_TESTO.riformulazione[t])||"default";
-  const opts=[];
-  opts.push({tipo:"riformulazione",testo:pick(REST_TESTO.riformulazione[tagMain]||REST_TESTO.riformulazione.default)});
-  const emo=last.emotion;
-  opts.push({tipo:"empatia",testo:pick((emo&&REST_TESTO.empatia[emo])?REST_TESTO.empatia[emo]:REST_TESTO.empatia.default)});
-  const tgt=connectionTarget();
-  let insTxt=pick(REST_TESTO.insight.default);
-  if(tgt) insTxt=`Da ciò che mi racconta, emerge quanto tutto questo si leghi a ${CL.BISOGNI[tgt].label.toLowerCase()}.`;
-  opts.push({tipo:"insight",testo:insTxt,target:tgt});
-  return opts;
-}
-
-function renderQuestions(){
-  const {p1,p2,p3,bridges,bridgeEmphasis,emo}=classify();
-  curPriority={}; curP1exists=p1.length>0; curBridgeExists=bridges.length>0;
-  const area=$("qarea");
-  const card=(q,pri)=>{ curPriority[q.id]=pri; const hot=pri===1&&emo&&q.deepens===emo;
-    return `<button class="q ${pri===1?(hot?'hot':'p1'):''}" data-id="${q.id}"><div class="badges"><span class="b cat">${q.cat}</span><span class="b ${q.tipo}">${q.tipo}</span></div><div class="qtext">${q.testo}</div>${hot?`<div class="origin">${CL.nome.split(" ")[0]} è sul ${EMO_WORD[emo]}: approfondisci</div>`:(q.origin?`<div class="origin">${q.origin}</div>`:'')}</button>`; };
-  const bridgeCard=(q,on)=>{ curPriority[q.id]="B";
-    return `<button class="q bridge ${on?'on':''}" data-id="${q.id}"><div class="badges"><span class="b cat">${q.cat}</span><span class="b ponte">ponte</span></div><div class="qtext">${q.testo}</div><div class="framing">«${q.framing}»</div></button>`; };
-  const sections=[];
-  // RESTITUZIONE in cima quando la finestra è aperta
-  if(restWindow){
-    const rc=restWindow.map(o=>{ curPriority["REST:"+o.tipo]="R"; const cls={riformulazione:"r-rifor",empatia:"r-emp",insight:"r-ins"}[o.tipo];
-      return `<button class="q ${cls}" data-rest="${o.tipo}"><div class="badges"><span class="b ${o.tipo}">${o.tipo}</span></div><div class="qtext">${o.testo}</div></button>`; }).join("");
-    sections.push(`<div class="qsec"><div class="qsec-label rest">● Restituisci prima di chiedere <span class="desc">— o vai diretto a una domanda</span></div><div class="rest-lead">Ha appena detto qualcosa di rilevante. Come reagisci?</div><div class="q-list">${rc}</div></div>`);
-  }
-  if(p1.length) sections.push(`<div class="qsec"><div class="qsec-label p1">● Nasce da ciò che ha appena detto <span class="desc">— follow-up</span></div><div class="q-list">${p1.map(q=>card(q,1)).join("")}</div></div>`);
-  const bridgeBand = bridges.length? `<div class="qsec"><div class="qsec-label pb">● Porta la consulenza più in là <span class="desc">— collega a una nuova area</span></div>${bridgeEmphasis?`<div class="rest-lead">Tema esplorato a fondo: da qui puoi aprire una nuova direzione.</div>`:''}<div class="q-list">${bridges.map(q=>bridgeCard(q,bridgeEmphasis)).join("")}</div></div>`:"";
-  if(bridgeEmphasis&&bridgeBand) sections.push(bridgeBand);
-  if(p2.length) sections.push(`<div class="qsec"><div class="qsec-label p2">● Approfondisci lo stesso tema</div><div class="q-list">${p2.map(q=>card(q,2)).join("")}</div></div>`);
-  if(!bridgeEmphasis&&bridgeBand) sections.push(bridgeBand);
-  const p3s=p3.slice(0,5);
-  if(p3s.length) sections.push(`<div class="qsec"><div class="qsec-label p3">● Apri un nuovo argomento <span class="desc">— scoperta</span></div><div class="q-list">${p3s.map(q=>card(q,3)).join("")}</div></div>`);
-  area.innerHTML=sections.join("")||`<div class="empty">Hai esaurito i fili. È il momento di proporre.</div>`;
-  area.querySelectorAll("button.q[data-id]").forEach(b=>b.onclick=()=>ask(b.dataset.id));
-  area.querySelectorAll("button.q[data-rest]").forEach(b=>b.onclick=()=>restituisci(b.dataset.rest));
+function renderMosse(){
+  const ms=mosse();
+  const buckets={infase:[],avanza:[],fuori:[]};
+  ms.forEach(m=>{const fit=fitOf(m.fam,S.fase);
+    if(isTrigger(m.fam,S.fase))buckets.avanza.push({m,fit:"trigger"});
+    else if(fit==="centrale"||fit==="ammessa")buckets.infase.push({m,fit});
+    else buckets.fuori.push({m,fit});});
+  const card=(o)=>{const m=o.m;const cls=o.fit==="trigger"?"avanza":(o.fit==="centrale"?"centrale":(o.fit==="ammessa"?"ammessa":"fuori"));
+    return `<button class="q ${cls}" data-k="${m.k}"><div class="badges"><span class="b cat">${m.badge}</span><span class="b ${m.tipo}">${m.tipo}</span></div><div class="qtext">${m.label}</div></button>`;};
+  let h="";
+  if(buckets.infase.length)h+=`<div class="qsec"><div class="qsec-label p1">● In questa fase — ${FASI[S.fase-1].nome}</div><div class="q-list">${buckets.infase.map(card).join("")}</div></div>`;
+  if(buckets.avanza.length)h+=`<div class="qsec"><div class="qsec-label pb">● Per passare alla fase successiva ${S.prontezza>=SOGLIA_AVANZA?'— sei pronto':'— attento al tempismo'}</div><div class="q-list">${buckets.avanza.map(card).join("")}</div></div>`;
+  if(buckets.fuori.length)h+=`<div class="qsec"><div class="qsec-label p3">● Sconsigliate ora</div><div class="q-list">${buckets.fuori.map(card).join("")}</div></div>`;
+  h+=`<button class="btn ghost" id="concludi" style="margin-top:6px">Concludi il colloquio →</button>`;
+  $("qarea").innerHTML=h;
+  $("qarea").querySelectorAll("button.q[data-k]").forEach(b=>b.onclick=()=>{const m=mosse().find(x=>x.k===b.dataset.k);if(m)play(m);});
+  $("concludi").onclick=debrief;
 }
 
 /* ============================================================
-   RESTITUZIONE — risoluzione (gratuita, non consuma mosse)
+   DEBRIEF orientato agli errori di fase
    ============================================================ */
-function restituisci(tipo){
-  const last=lastQ(); const opt=(restWindow||[]).find(o=>o.tipo===tipo); if(!opt){return;}
-  const r=CL.reazioni;
-  const overMirror = restStreak>=r.soglia;             // eccesso di restituzioni consecutive
-  let fit=true, causa=null, target=null;
-  if(overMirror){ fit=false; causa="eccesso"; }
-  else if(tipo==="empatia" && !CHARGED.includes(last.emotion)){ fit=false; causa="empatia_neutra"; }
-  else if(tipo==="insight"){ target=opt.target; if(!target){ fit=false; causa="insight_vuoto"; } }
-
-  addMsg("me rest",`<div class="txt">${opt.testo}</div>`);
-  const before={...S};
-
-  if(!fit){
-    // RESTITUZIONE ARTIFICIALE — reazione conversazionale credibile + lieve raffreddamento
-    const linea=reazioneArtificiale(causa, CL.tratti);
-    S.fiducia=clamp(S.fiducia-3*r.prematura);
-    S.apertura=clamp(S.apertura-2);
-    S.pressione=clamp(S.pressione+4*r.prematura);
-    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${linea}</div>`);
-    addMsg("cue",`${CL.nome.split(" ")[0]} ${pick(STATE_CUES.Diffidente)}.`);
-    restStreak++;
-    restituzioni.push({tipo,fit:false,causa});
-    setStatus(emotionState({}), "ha percepito la tecnica");
-  } else {
-    let consapGain=0, illuminated=null, sys=[];
-    if(tipo==="riformulazione"){
-      S.fiducia=clamp(S.fiducia+4*r.rifor*r.relazione); S.apertura=clamp(S.apertura+4*r.rifor);
-      addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("riformulazione")}</div>`);
-    } else if(tipo==="empatia"){
-      S.fiducia=clamp(S.fiducia+5*r.emp); S.apertura=clamp(S.apertura+4*r.emp); S.pressione=clamp(S.pressione-3*r.emp);
-      addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("empatia")}</div>`);
-    } else if(tipo==="insight"){
-      consapGain=Math.round(12*r.ins);
-      S.consapevolezza=clamp(S.consapevolezza+consapGain);
-      const ns=needState[target];
-      if(ns.discovered && !ns.illuminated){ ns.illuminated=true; illuminated=target; }
-      const area=CL.NEED_AREA[target];
-      if(area && !areaOpened.has(area)){ areaOpened.add(area); sys.push(`La tua sintesi apre una nuova area: <b>${CL.BISOGNI[target].label}</b>.`); }
-      S.fiducia=clamp(S.fiducia+2);
-      addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("insight")}</div>`);
-    }
-    addMsg("cue",`${CL.nome.split(" ")[0]} ${pick(STATE_CUES.Coinvolto.concat(STATE_CUES.Interessato))}.`);
-    if(consapGain) addMsg("sys need",`↑ Consapevolezza generata dalla tua sintesi (+${consapGain}).`);
-    if(illuminated) addMsg("sys need",`↑ Hai reso consapevole: <b>${CL.BISOGNI[illuminated].label}</b>.`);
-    sys.forEach(m=>addMsg("sys thread",m));
-    restStreak++;
-    restituzioni.push({tipo,fit:true});
-    setStatus(emotionState({consap:S.consapevolezza-before.consapevolezza}), "si sente ascoltato");
-  }
-  restWindow=null;
-  renderStrip(); renderDossier(); renderMemline(); renderQuestions();
-}
-
-/* ============================================================
-   DOMANDA — consuma una mossa
-   ============================================================ */
-function ask(id){
-  const q=dom(id); const pri=curPriority[id]||3;
-  const leaving=lastQ(); const leavingEmo=leaving?leaving.emotion:null;
-  const isJump = pri===3 && (curP1exists||curBridgeExists);
-  // chiudere una finestra di restituzione senza usarla = ho scelto di non restituire → azzera streak
-  if(restWindow){ restWindow=null; restStreak=0; }
-  used.add(id); moves++;
-  if(q.tipo==="ponte") areaOpened.add(q.opens);
-
-  const before={...S};
-  let eff={...(q.eff||{})};
-  if((q.tipo==="relazione"||q.tipo==="scoperta") && eff.fiducia>0) eff.fiducia*=CL.reazioni.relazione;
-  S.fiducia=clamp(S.fiducia+(eff.fiducia||0)); S.apertura=clamp(S.apertura+(eff.apertura||0)); S.pressione=clamp(S.pressione+(eff.pressione||0));
-
-  let jumpHurt=false;
-  if(isJump && CHARGED.includes(leavingEmo)){ S.fiducia=clamp(S.fiducia-2); S.pressione=clamp(S.pressione+2); jumpHurt=true; }
-
-  const reveals=q.rivela||[]; reveals.forEach(i=>discovered.add(i));
-  const fresh=recomputeNeeds();
-  let illuminated=null;
-  if(q.tipo==="implicazione"&&needState[q.target]&&needState[q.target].discovered){ S.consapevolezza=clamp(S.consapevolezza+modConsap(q.consapBase,q)); needState[q.target].illuminated=true; illuminated=q.target; }
-  const delta={f:S.fiducia-before.fiducia,a:S.apertura-before.apertura,p:S.pressione-before.pressione,consap:S.consapevolezza-before.consapevolezza};
-  history.push({q,delta,reveals,illuminated,pri,wasJump:isJump});
-
-  const myText=q.tipo==="ponte"?`<span style="opacity:.85">${q.framing}</span><br><br>${q.testo}`:q.testo;
-  addMsg("me",`<div class="txt">${myText}</div>`);
-  const stateEmo=emotionState(delta);
-  const cue=jumpHurt?"il sorriso si spegne, cambiate discorso":cueFor(q.emotion,stateEmo,delta.p);
-  const tagHtml=(q.tags&&q.tags.length)?`<div class="tagrow">${q.tags.map(t=>`<span class="ctag">${t}</span>`).join("")}</div>`:"";
-  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${q.reply}</div>${tagHtml}`);
-  addMsg("cue",`${CL.nome.split(" ")[0]} ${cue}.`); setStatus(stateEmo,cue);
-
-  if(jumpHurt) addMsg("sys bad",`Hai cambiato argomento mentre si stava aprendo: la confidenza resta a metà.`);
-  if(q.tipo==="ponte") addMsg("sys thread",`Hai aperto una nuova area di analisi. Ora tocca a te scoprire e far emergere il bisogno.`);
-  reveals.forEach(i=>addMsg("sys",`Hai scoperto: ${CL.INFO[i].testo}`));
-  fresh.forEach(i=>addMsg("sys need",`★ Bisogno emerso: <b>${CL.BISOGNI[i].label}</b>${CL.BISOGNI[i].critico?" — critico":""}.`));
-  if(illuminated) addMsg("sys need",`↑ Consapevolezza generata su: <b>${CL.BISOGNI[illuminated].label}</b>.`);
-  if(q.tipo==="vendita") addMsg("sys bad",`Spinta di vendita prematura: la fretta brucia la fiducia.`);
-
-  // apertura finestra di restituzione se la risposta è significativa
-  if(isSignificant(q,fresh)) restWindow=restOptions(); else restWindow=null;
-
-  renderStrip(); renderDossier(); renderMemline(); renderQuestions();
-  if(moves>=MAX_MOVES){ addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">Devo andare. Mi dica: come ci muoviamo?</div>`); proposal(); }
-}
-
-/* ============================================================
-   PROPOSTA / METRICHE / ESITO / DEBRIEF
-   ============================================================ */
-let propChoice;
-function proposal(){
-  propChoice=new Set();
-  const known=CL.ORDINE.filter(i=>needState[i].discovered).map(i=>CL.BISOGNI[i].label);
-  $("main").innerHTML=`<h2 style="font-size:19px;margin:0 0 4px">La proposta</h2>
-    <p class="lead">${known.length?"Sono emersi: <b>"+known.join("</b>, <b>")+"</b>.":"Non è emerso quasi nulla."} Proponi solo ciò che hai scoperto e reso consapevole.</p>
-    <div id="props" style="margin:16px 0"></div>
-    <button class="btn primary" id="concludi">Concludi →</button>
-    <button class="btn ghost" id="niente">Non propongo nulla (analisi)</button>`;
-  const box=$("props");
-  Object.entries(CL.PROPOSTE).forEach(([pid,p])=>{const lab=document.createElement("label");lab.className="prop";
-    lab.innerHTML=`<input type="checkbox" value="${pid}"><span><span class="pn">${p.nome}</span><br><span class="pd">${p.desc}</span></span>`;
-    const cb=lab.querySelector("input");cb.onchange=()=>{if(cb.checked){if(propChoice.size>=3){cb.checked=false;return;}propChoice.add(pid);lab.classList.add("on");}else{propChoice.delete(pid);lab.classList.remove("on");}};box.appendChild(lab);});
-  $("concludi").onclick=()=>debrief([...propChoice]); $("niente").onclick=()=>debrief([]);
-}
-function calcCoerenza(sel){const traps=history.filter(h=>h.q.tipo==="vendita").length;
-  if(sel.length===0){const disc=CL.ORDINE.filter(i=>needState[i].discovered);if(!disc.length)return clamp(0-traps*10);const r=disc.filter(i=>needState[i].illuminated).length/disc.length;return clamp(50+r*40-traps*10);}
-  let s=0;sel.forEach(p=>{const n=CL.PROPOSTE[p].bisogno,ns=needState[n];s+=!ns.discovered?0:(ns.illuminated?100:45);});return clamp(s/sel.length-traps*10);}
-function calcPertinenza(sel){if(!sel.length)return 0;let s=0;sel.forEach(p=>s+=CL.PROPOSTE[p].pert);return clamp(s/sel.length);}
-function calcCoerenzaConv(){let fu=0,same=0,jumps=0,evol=0,rest=0;
-  history.forEach(h=>{if(h.q.tipo==="ponte"){fu++;evol++;}else if(h.pri===1)fu++;else if(h.pri===2)same++;else if(h.wasJump)jumps++;});
-  restituzioni.forEach(r=>{ if(r.fit)rest++; else jumps++; });
-  return clamp(50+fu*7+same*3+evol*4+rest*5-jumps*12);
-}
-function decideEsito(sel,coer,pert){
-  const critId=CL.ORDINE.find(i=>CL.BISOGNI[i].critico); const crit=needState[critId];
-  const ready=crit.discovered&&crit.illuminated&&S.consapevolezza>=CL.sogliaConsap;
-  const matched=new Set(sel.map(p=>CL.PROPOSTE[p].bisogno).filter(n=>needState[n]&&needState[n].discovered)); const nM=matched.size;
-  const critProp=sel.some(p=>CL.PROPOSTE[p].bisogno===critId);
-  const dc=CL.ORDINE.filter(i=>needState[i].discovered).length;
-  if(S.pressione>=70||S.fiducia<=20)return{esito:"Cliente perso",kind:"bad"};
-  if(sel.length===0){if(dc>=3&&S.fiducia>=45)return{esito:"Analisi completata",kind:"warn"};return{esito:"Nessun accordo",kind:"muted"};}
-  if(!ready){if(S.fiducia>=45&&dc>=2)return{esito:"Appuntamento successivo",kind:"warn"};return{esito:"Nessun accordo",kind:"muted"};}
-  if(!critProp)return{esito:"Appuntamento successivo",kind:"warn"};
-  if(pert<40)return{esito:"Appuntamento successivo",kind:"warn"};
-  if(coer>=80&&pert>=85&&S.pressione<=20&&S.consapevolezza>=70&&nM>=3)return{esito:"Cliente Promotore",kind:"good"};
-  if(coer>=65&&pert>=70&&S.pressione<=30&&nM>=2)return{esito:"Cliente Fidelizzato",kind:"good"};
-  if(nM>=2&&coer>=50)return{esito:"Cross Selling",kind:"good"};
-  if(coer>=40)return{esito:"Vendita",kind:"good"};
-  return{esito:"Appuntamento successivo",kind:"warn"};
-}
-function debrief(sel){
-  S.coerenza=calcCoerenza(sel); S.pertinenza=calcPertinenza(sel); S.coerenzaConv=calcCoerenzaConv();
-  const out=decideEsito(sel,S.coerenza,S.pertinenza);
-  const col={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)",muted:"var(--muted)"}[out.kind];
-  const bg={good:"#e7f3f1",warn:"#fbf0e3",bad:"#fbeaea",muted:"#eef2f6"}[out.kind];
-  const battute={"Cliente Promotore":"Non mi ha venduto niente: mi ha aperto gli occhi. La consiglierò.","Cliente Fidelizzato":"Ora ho capito perché mi serve. Procediamo.","Cross Selling":"Mi ha convinto su più fronti. Sistemiamo tutto.","Vendita":"Va bene, su questo ci sto.","Appuntamento successivo":"Mi ha dato da pensare. Rivediamoci.","Analisi completata":"Non abbiamo concluso, ma è la chiacchierata più utile da anni.","Nessun accordo":"Oggi lasciamo stare.","Cliente perso":"Mi sono sentito solo spinto. Lasciamo perdere."};
-  const disc=CL.ORDINE.filter(i=>needState[i].discovered),notDisc=CL.ORDINE.filter(i=>!needState[i].discovered);
-  const critId=CL.ORDINE.find(i=>CL.BISOGNI[i].critico);
-  const fitRest=restituzioni.filter(r=>r.fit).length, artRest=restituzioni.filter(r=>!r.fit).length;
-  const evol=history.filter(h=>h.q.tipo==="ponte").length, jumps=history.filter(h=>h.wasJump).length;
+function debrief(){
+  const crit=CL.ORDINE.find(n=>CL.BISOGNI[n].critico);
+  const critCoperto=S.need[crit]==="coperto";
+  const critRic=RICON.includes(S.need[crit]);
+  const coperti=CL.ORDINE.filter(n=>S.need[n]==="coperto");
+  const fuoriTot=[1,2,3,4,5].reduce((a,f)=>a+S.ledger[f].fuori,0);
+  const regrTot=[1,2,3,4,5].reduce((a,f)=>a+S.ledger[f].regr,0);
+  let esito,kind;
+  if(S.pressione>=70||S.fiducia<=20){esito="Cliente perso";kind="bad";}
+  else if(!coperti.length){esito=critRic?"Appuntamento successivo":"Nessun accordo";kind=critRic?"warn":"muted";}
+  else if(critCoperto&&S.padronanza>=70&&S.pressione<=22&&S.priorityNeed){esito="Cliente Promotore";kind="good";}
+  else if(critCoperto&&S.padronanza>=55){esito="Cliente Fidelizzato";kind="good";}
+  else if(coperti.length>=2){esito="Cross Selling";kind="good";}
+  else{esito="Vendita";kind="good";}
+  const col={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)",muted:"var(--muted)"}[kind];
+  const bg={good:"#e7f3f1",warn:"#fbf0e3",bad:"#fbeaea",muted:"#eef2f6"}[kind];
 
   const fb=[];
-  if(fitRest>0) fb.push(["good","Ascolto restituito","Hai restituito ciò che capivi "+fitRest+" volta/e (riformulazione, empatia, insight). Il cliente si è sentito capito, non interrogato."]);
-  else fb.push(["tip","Solo domande","Non hai mai restituito ciò che capivi. La consulenza è rimasta un'intervista: prova a riformulare, empatizzare o collegare prima di incalzare."]);
-  if(artRest>0) fb.push(["bad","Restituzione artificiale","Hai usato "+artRest+" restituzione/i fuori contesto: il cliente ha percepito la tecnica e si è raffreddato. Empatia su un dato freddo o insight senza elementi suonano falsi."]);
-  if(evol>0) fb.push(["good","Consulenza in evoluzione","Hai aperto "+evol+" nuova/e area/e via ponte."]);
-  if(jumps>0) fb.push(["bad","Continuità spezzata","Hai cambiato discorso a freddo "+jumps+" volta/e."]);
-  if(needState[critId].illuminated) fb.push(["good","Bisogno critico reso consapevole",CL.BISOGNI[critId].label+": il cliente l'ha sentito, non solo sentito dire."]);
-  else if(needState[critId].discovered) fb.push(["bad","Critico non reso consapevole","Avevi scoperto "+CL.BISOGNI[critId].label.toLowerCase()+", ma non l'hai illuminato (con un'implicazione o un insight)."]);
-  else fb.push(["bad","Critico mai emerso",CL.BISOGNI[critId].label+" non è emerso."]);
-  if(S.consapevolezza<CL.sogliaConsap) fb.push(["bad","Consapevolezza insufficiente","A "+S.consapevolezza+" (soglia "+CL.sogliaConsap+")."]);
-  if(sel.length){const wrong=sel.filter(p=>CL.PROPOSTE[p].pert<55);
-    if(wrong.length)fb.push(["bad","Soluzione poco pertinente","«"+wrong.map(p=>CL.PROPOSTE[p].nome).join(", ")+"»: poco adatta al profilo."]);
-    else fb.push(["good","Proposta pertinente","Soluzioni coerenti con i vincoli del cliente."]);}
+  fb.push([fuoriTot===0?"good":"bad","Disciplina di fase",fuoriTot===0?"Nessuna mossa fuori fase: hai rispettato il percorso.":`${fuoriTot} mosse fuori fase. Il metodo si impara col tempismo, non con le mosse giuste fatte al momento sbagliato.`]);
+  fb.push([regrTot>0?"good":"tip","Regressioni",regrTot>0?`${regrTot} ritorni legittimi a esplorare aree appena aperte: buona consulenza.`:"Nessuna regressione: va bene se il percorso è filato, ma non temere di tornare indietro quando emerge qualcosa di nuovo."]);
+  if(critCoperto)fb.push(["good","Bisogno critico",`${CL.BISOGNI[crit].label}: riconosciuto dal cliente e coperto con una risposta pertinente.`]);
+  else if(critRic)fb.push(["tip","Bisogno critico",`${CL.BISOGNI[crit].label} era riconosciuto, ma non gli hai dato una risposta.`]);
+  else if(S.need[crit]==="illuminato")fb.push(["bad","Bisogno critico",`Avevi illuminato ${CL.BISOGNI[crit].label.toLowerCase()}, ma il cliente non è arrivato a prenderne posizione (Fase 4 mancata).`]);
+  else fb.push(["bad","Bisogno critico",`${CL.BISOGNI[crit].label} non è mai diventato consapevole.`]);
+  if(!S.priorityNeed)fb.push(["bad","Presa di posizione","Il cliente non ha mai preso posizione su ciò che conta di più: la consulenza è rimasta in superficie."]);
+  if(S.fase<3)fb.push(["bad","Percorso interrotto","Ti sei fermato troppo presto: non hai accompagnato il cliente fino alla consapevolezza."]);
 
-  const tips=[];
-  if(artRest>0) tips.push("Restituisci solo quando c'è qualcosa da restituire: l'empatia vuole un'emozione, l'insight vuole almeno due informazioni da collegare.");
-  if(fitRest===0) tips.push("Dopo una risposta importante, prima di rilanciare prova a dimostrare ascolto: spesso apre più di un'altra domanda.");
-  if(!needState[critId].illuminated&&needState[critId].discovered) tips.push("Un insight ben fondato può rendere consapevole il bisogno critico anche senza incalzare con altre domande.");
-  if(notDisc.length) tips.push("Aree rimaste chiuse: "+notDisc.map(i=>CL.BISOGNI[i].label).join(", ")+".");
-  if(!tips.length) tips.push("Conduzione matura: ascolto, sintesi ed evoluzione. Cerca la consapevolezza su più bisogni per il massimo.");
-
-  const ds=(l,k,c,n)=>`<div class="db-stat"><div class="h">${l}<b>${S[k]}</b></div><div class="bar"><i style="width:${S[k]}%;background:${c}"></i></div><div class="note">${n}</div></div>`;
+  const tempo=[1,2,3,4,5].map(f=>`<span style="display:inline-block;min-width:104px">${FASI[f-1].nome}: <b>${S.ledger[f].turni}</b></span>`).join("");
   $("main").innerHTML=`
-    <div class="verdict"><span class="badge" style="color:${col};background:${bg}">Esito</span><h2 style="color:${col}">${out.esito}</h2><div class="sub">${CL.nome} · scenario: ${CL.scenario} · ${CL.tratti.join(", ")} (voce ${CL.voce})</div><div class="sub" style="margin-top:3px;font-style:italic">Nucleo: ${CL.paura}</div></div>
-    <div class="msg client" style="margin-top:16px"><div class="who">${CL.nome}</div><div class="txt">${battute[out.esito]}</div></div>
-    <div class="hr"></div><h3 class="block">Statistiche</h3>
-    <div class="db-stats">
-      ${ds("Fiducia","fiducia","var(--c-fiducia)","si costruisce piano")}
-      ${ds("Apertura","apertura","var(--c-apertura)","quanto si è lasciato esplorare")}
-      ${ds("Pressione","pressione","var(--c-pressione)","quanto si è sentito spinto")}
-      ${ds("Consapevolezza","consapevolezza","var(--c-consap)","quanto ha capito")}
-      ${ds("Coerenza (metodo)","coerenza","#0891b2","qualità del percorso")}
-      ${ds("Pertinenza","pertinenza","#b45309","qualità della soluzione")}
-      ${ds("Coerenza convers.","coerenzaConv","#7c3aed","ascolto, continuità, sintesi")}
-    </div>
-    <div class="hr"></div><h3 class="block">Cosa è successo</h3>
+    <div class="verdict"><span class="badge" style="color:${col};background:${bg}">Esito</span><h2 style="color:${col}">${esito}</h2>
+      <div class="sub">${CL.nome} · scenario: ${CL.scenario} · ${CL.tratti.join(", ")}</div>
+      <div class="sub" style="margin-top:3px;font-style:italic">Nucleo: ${CL.paura}</div></div>
+    <div class="hr"></div><h3 class="block">Padronanza del Metodo</h3>
+    <div class="db-stat"><div class="h">Padronanza<b>${Math.round(S.padronanza)}</b></div><div class="bar"><i style="width:${S.padronanza}%;background:#7c3aed"></i></div></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-top:10px">Tempo per fase — ${tempo}</div>
+    <div class="hr"></div><h3 class="block">Lettura del percorso</h3>
     ${fb.map(([k,t,x])=>`<div class="fb ${k}"><div class="t">${t}</div>${x}</div>`).join("")}
-    <div class="hr"></div><h3 class="block">Come migliorare</h3>
-    ${tips.map(t=>`<div class="fb tip"><div class="t">Suggerimento</div>${t}</div>`).join("")}
+    <div class="fb tip" style="margin-top:6px"><div class="t">Principio</div>Non conta quante domande hai fatto, ma se hai accompagnato il cliente: fidarsi → raccontarsi → comprendere → prendere posizione → agire.</div>
     <button class="btn primary" id="again" style="margin-top:18px">Nuovo cliente ↺</button>`;
-  $("again").onclick=intro; $("main").scrollIntoView({behavior:"smooth",block:"start"});
+  $("again").onclick=intro;$("main").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 /* ============================================================
-   INTRO — selezione/generazione cliente
+   INTRO / AVVIO
    ============================================================ */
 function intro(){
-  $("strip").innerHTML=""; $("moves").innerHTML=""; $("dossier").innerHTML="";
-  const cards=ARCHETIPI.map(a=>`<button class="arche" data-arch="${a.id}"><div class="an">${a.nome}<span class="diff">${[1,2,3,4,5].map(n=>`<i class="${n<=a.difficolta?'on':''}"></i>`).join("")}</span></div><div class="ad">${a.desc}</div><div class="traits"><span class="tr">${a.scenari.length} scenari</span><span class="tr">personalità variabile</span></div></button>`).join("");
-  $("main").innerHTML=`<div class="intro"><h2>Consulente Simulator · V8</h2>
-    <p class="lead">La V8 introduce il <b>modello a scenari</b>: ogni archetipo non è più un solo problema, ma campiona uno <b>scenario</b> (bisogno critico, informazioni, paura e percorso diversi) e una <b>personalità</b> in modo indipendente. Due clienti dello stesso archetipo possono quindi generare consulenze completamente diverse. Restano voce/variabilità linguistica e il sistema di restituzione.</p>
+  $("strip").innerHTML="";$("moves").innerHTML="";$("dossier").innerHTML="";if($("phasebar"))$("phasebar").innerHTML="";
+  const cards=ARCHETIPI.map(a=>`<button class="arche" data-arch="${a.id}"><div class="an">${a.nome}<span class="diff">${[1,2,3,4,5].map(n=>`<i class="${n<=a.difficolta?'on':''}"></i>`).join("")}</span></div><div class="ad">${a.desc}</div><div class="traits"><span class="tr">${a.scenari.length} scenari</span><span class="tr">5 fasi consulenziali</span></div></button>`).join("");
+  $("main").innerHTML=`<div class="intro"><h2>Consulente Simulator · V9</h2>
+    <p class="lead">La V9 è costruita sulle <b>cinque fasi</b> di una consulenza reale: Armonizzazione → Esplorazione → Consapevolezza → Presa di posizione → Soluzione. Non si valuta il fare domande, ma la capacità di <b>accompagnare il cliente</b>: fidarsi → raccontarsi → comprendere → prendere posizione → agire. Ogni mossa ha un suo momento giusto; il tempismo è la competenza centrale.</p>
     <div class="pick">${cards}</div>
-    <p class="hint">Scegli un archetipo: lo scenario e il carattere vengono estratti a sorte. Il problema lo scopri parlando — non è scritto in chiaro.</p></div>`;
+    <p class="hint">Vedrai sempre in quale fase sei e una barra di prontezza. Si avanza facendo la mossa giusta al momento giusto — non c'è un pulsante "avanza".</p></div>`;
   $("main").querySelectorAll("button.arche").forEach(b=>b.onclick=()=>avvia(b.dataset.arch));
 }
 function avvia(archId){
-  const cliente=generaCliente(archId); initRun(cliente); renderStrip(); renderDossier();
-  const fn=cliente.nome.split(" ")[0];
+  const cliente=generaCliente(archId);initFasi(cliente);
   $("main").innerHTML=`<div class="intro"><h2>${cliente.nome}</h2>
     <div class="person"><div class="avatar">${cliente.nome.split(" ").map(w=>w[0]).join("").slice(0,2)}</div><div><div style="font-weight:700">${cliente.nome}</div><div style="font-size:12.5px;color:var(--muted)">${cliente.riga} · ${cliente.tratti.join(", ")}</div><div class="traits" style="margin-top:6px"><span class="tr">voce: ${cliente.voce}</span></div></div></div>
-    <div class="qsec-label p3">Quello che sai già</div><ul class="vis">${cliente.visibili.map(v=>`<li>${v}</li>`).join("")}</ul>
-    <p class="hint">Difficoltà ${cliente.difficolta}/5. Ascolta, restituisci dove serve, fai emergere e rendi consapevole il bisogno. Hai ${MAX_MOVES} mosse (le restituzioni non le consumano).</p>
+    <div class="qsec-label p3">Appunti pre-incontro</div><ul class="vis">${cliente.visibili.map(v=>`<li>${v}</li>`).join("")}</ul>
+    <p class="hint">Difficoltà ${cliente.difficolta}/5. Inizia dall'Armonizzazione: prima la relazione, poi tutto il resto.</p>
     <button class="btn primary" id="start" style="margin-top:14px">Inizia il colloquio →</button></div>`;
   $("start").onclick=startConvo;
 }
 function startConvo(){
-  $("main").innerHTML=`<div id="convo"></div><div class="status"><span class="emo" id="emo"></span><span class="cue-now" id="cuenow"></span></div><div class="memline" id="memline"></div><div id="qarea"></div><button class="btn ghost" id="toProp">Passa alla proposta →</button>`;
+  $("main").innerHTML=`<div id="phasebar" class="phasebar"></div><div id="convo"></div><div class="status"><span class="emo" id="emo"></span></div><div id="qarea"></div>`;
   convoEl=$("convo");
-  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">Eccomi. Ho poco tempo, ma mi dica pure.</div>`);
-  setStatus("Sereno","la saluta");
-  renderMemline(); renderQuestions();
-  $("toProp").onclick=()=>proposal();
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${CL.apertura}</div>`);
+  S.prontezza=prontezza();renderTop();renderDossier();renderMosse();setStatus();
 }
 intro();
 </script>
