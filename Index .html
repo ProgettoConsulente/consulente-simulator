@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Consulente Simulator V9 — Macchina a fasi</title>
+<style>
+  :root{
+    --bg:#eaeef2; --surface:#fff; --surface-2:#f5f8fa; --ink:#18242f; --muted:#5d6b7a;
+    --line:#dbe2e9; --primary:#0f766e; --primary-d:#0b5d56;
+    --c-fiducia:#0f766e; --c-apertura:#2563eb; --c-pressione:#dc2626; --c-consap:#7c3aed;
+    --good:#0f766e; --warn:#b45309; --bad:#dc2626;
+    --shadow:0 1px 2px rgba(20,40,60,.06),0 8px 24px rgba(20,40,60,.06);
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+  .app{max-width:1080px;margin:0 auto;padding:0 0 40px}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(150%) blur(8px);border-bottom:1px solid var(--line);padding:10px max(14px,env(safe-area-inset-left))}
+  .topbar .row1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{font-weight:700;font-size:15px} .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+  .moves{font-size:12px;color:var(--muted)} .moves b{color:var(--ink)}
+  .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
+  .chip{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 8px}
+  .chip .h{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px} .chip .h b{font-size:13px;color:var(--ink)}
+  .chip .bar{height:5px;background:#e5ebf0;border-radius:4px;margin-top:5px;overflow:hidden} .chip .bar i{display:block;height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px;padding:16px 14px 0} @media(min-width:860px){.grid{grid-template-columns:1fr 320px}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)} .pad{padding:18px}
+  #convo{display:flex;flex-direction:column;gap:11px;max-height:42vh;overflow-y:auto;padding:4px 2px} @media(min-width:860px){#convo{max-height:48vh}}
+  .msg{animation:fade .35s ease} @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .msg.client .who{font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .msg.client .txt{background:var(--surface-2);border:1px solid var(--line);border-radius:4px 13px 13px 13px;padding:11px 13px}
+  .msg.me{align-self:flex-end;max-width:88%} .msg.me .txt{background:var(--primary);color:#eafffb;border-radius:13px 13px 4px 13px;padding:10px 13px;font-size:14px}
+  .msg.me.rest .txt{background:#475569}
+  .msg.cue{color:var(--muted);font-style:italic;font-size:13px;padding:0 6px}
+  .msg.sys{font-size:12.5px;color:var(--primary-d);background:#e7f3f1;border:1px solid #cfe8e3;border-radius:9px;padding:7px 11px}
+  .msg.sys.bad{color:#9a1d1d;background:#fbeaea;border-color:#f3cccc}
+  .msg.sys.need{color:#5b2da8;background:#f0eafb;border-color:#ddccf3}
+  .msg.sys.thread{color:#15803d;background:#e9f8ee;border-color:#c5ead2}
+  .tagrow{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  .ctag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:20px;background:#eef2f6;color:var(--muted)}
+  .status{display:flex;align-items:center;gap:10px;margin:14px 0 2px;flex-wrap:wrap}
+  .emo{font-size:12px;font-weight:700;padding:4px 11px;border-radius:30px;letter-spacing:.3px}
+  .status .cue-now{font-size:13px;color:var(--muted);font-style:italic}
+  .memline{font-size:11.5px;color:var(--muted);margin:0 0 12px;padding-left:2px} .memline b{color:var(--primary-d);font-weight:600}
+  .qsec{margin-bottom:14px}
+  .qsec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:0 0 8px;display:flex;align-items:center;gap:7px}
+  .qsec-label.rest{color:#475569} .qsec-label.p1{color:var(--primary)} .qsec-label.p2{color:#1d4ed8} .qsec-label.pb{color:#6d28d9} .qsec-label.p3{color:var(--muted)}
+  .qsec-label .desc{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+  .q-list{display:flex;flex-direction:column;gap:9px}
+  button.q{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:11px 13px;cursor:pointer;font:inherit;color:var(--ink);transition:.13s;line-height:1.4}
+  button.q:hover{border-color:var(--primary);background:var(--surface-2)}
+  button.q.p1{border-left:3px solid var(--primary)} button.q.hot{border-left:3px solid var(--warn);background:#fffaf2}
+  button.q.bridge{border-left:3px solid #7c3aed} button.q.bridge.on{background:#f7f3fe}
+  button.q.r-rifor{border-left:3px solid #0891b2} button.q.r-emp{border-left:3px solid #db2777} button.q.r-ins{border-left:3px solid #7c3aed}
+  .q .badges{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+  .b{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:20px}
+  .b.cat{background:#eef2f6;color:var(--muted)} .b.scoperta{background:#e7f0fb;color:#1d4ed8} .b.implicazione{background:#f0eafb;color:#6d28d9}
+  .b.relazione{background:#e7f3f1;color:var(--primary-d)} .b.vendita{background:#fbeaea;color:#b91c1c} .b.ponte{background:#efe7fb;color:#6d28d9}
+  .b.riformulazione{background:#e0f2fe;color:#0369a1} .b.empatia{background:#fce7f3;color:#be185d} .b.insight{background:#ede9fe;color:#6d28d9}
+  .q .qtext{font-size:14px} .q .origin{font-size:11px;color:var(--muted);margin-top:5px} .q .origin::before{content:"↳ "}
+  .q .framing{font-size:12px;color:#5b3aa6;margin-top:6px;font-style:italic}
+  .rest-lead{font-size:11.5px;color:#475569;margin:-2px 0 9px;font-style:italic}
+  .btn{font:inherit;font-weight:600;border:none;border-radius:11px;padding:13px 18px;cursor:pointer;transition:.15s}
+  .btn.primary{background:var(--primary);color:#fff;width:100%} .btn.primary:hover{background:var(--primary-d)}
+  .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--muted);width:100%;margin-top:10px} .btn.ghost:hover{border-color:var(--primary);color:var(--ink)}
+  .doss h4{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:7px} .doss h4::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--primary)}
+  .doss .group{margin-bottom:18px} .doss .group:last-child{margin-bottom:0}
+  .doss .item{font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line)} .doss .item:last-child{border-bottom:none}
+  .doss .empty{font-size:12.5px;color:var(--muted);font-style:italic}
+  .doss .need{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)} .doss .need:last-child{border-bottom:none}
+  .doss .need.locked{color:var(--muted)} .need .tags{display:flex;gap:5px;flex-shrink:0}
+  .tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border-radius:20px}
+  .tag.disc{background:#e7f0fb;color:#1d4ed8} .tag.illum{background:#f0eafb;color:#6d28d9} .tag.crit{background:#fbeaea;color:#b91c1c}
+  label.prop{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:12px 13px;cursor:pointer;margin-bottom:9px;transition:.13s}
+  label.prop:hover{border-color:var(--primary)} label.prop.on{border-color:var(--primary);background:var(--surface-2)}
+  label.prop input{margin-top:2px;width:17px;height:17px;accent-color:var(--primary);flex-shrink:0}
+  label.prop .pn{font-weight:600;font-size:14px} label.prop .pd{font-size:12.5px;color:var(--muted)}
+  .verdict{text-align:center;padding:6px 0 2px} .verdict .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 13px;border-radius:30px;margin-bottom:12px}
+  .verdict h2{font-size:26px;margin:0 0 4px} .verdict .sub{font-size:13px;color:var(--muted)}
+  .db-stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:18px 0} @media(min-width:560px){.db-stats{grid-template-columns:repeat(3,1fr)}}
+  .db-stat .h{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px} .db-stat .h b{font-weight:700}
+  .db-stat .bar{height:7px;background:#e5ebf0;border-radius:5px;overflow:hidden} .db-stat .bar i{display:block;height:100%;border-radius:5px} .db-stat .note{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .fb{border-left:3px solid var(--line);padding:3px 0 3px 13px;margin-bottom:11px;font-size:13.5px} .fb.good{border-color:var(--good)} .fb.bad{border-color:var(--bad)} .fb.tip{border-color:var(--warn)}
+  .fb .t{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px} .fb.good .t{color:var(--good)} .fb.bad .t{color:var(--bad)} .fb.tip .t{color:var(--warn)}
+  .hr{height:1px;background:var(--line);margin:18px 0} h3.block{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px}
+  .intro h2{font-size:20px;margin:0 0 4px} .lead{font-size:13.5px;color:var(--muted)} .hint{font-size:12px;color:var(--muted);margin-top:9px}
+  .pick{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+  button.arche{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:13px 15px;cursor:pointer;font:inherit;color:var(--ink);transition:.13s}
+  button.arche:hover{border-color:var(--primary);background:var(--surface-2)}
+  .arche .an{font-weight:700;font-size:14px} .arche .ad{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .arche .traits{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .tr{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:20px;background:#eef2f6;color:var(--muted)}
+  .person{display:flex;gap:13px;align-items:center;margin:14px 0;padding:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px}
+  .avatar{width:52px;height:52px;border-radius:11px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex-shrink:0}
+  .diff{display:inline-flex;gap:2px;margin-left:8px} .diff i{width:7px;height:7px;border-radius:50%;background:#cbd5e1} .diff i.on{background:var(--warn)}
+  ul.vis{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px}
+
+  .phasebar{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+  .fsteps{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .fstep{display:flex;align-items:center;gap:5px;opacity:.45;font-size:11.5px}
+  .fstep.on{opacity:1;font-weight:700;color:var(--primary-d)} .fstep.done{opacity:.8}
+  .fstep .fn{width:18px;height:18px;border-radius:50%;background:#cbd5e1;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .fstep.on .fn{background:var(--primary)} .fstep.done .fn{background:var(--good)}
+  .farrow{color:#cbd5e1;font-size:13px}
+  .prontezza{margin-top:9px} .prontezza .pl{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .prontezza .pbar{height:7px;background:#e5ebf0;border-radius:5px;overflow:hidden} .prontezza .pbar i{display:block;height:100%;border-radius:5px;transition:width .4s}
+  .prontezza .pready{font-size:11px;color:var(--primary-d);font-weight:600;margin-top:4px}
+  .pmastery{font-size:11px;color:var(--muted);margin-top:7px} .pmastery b{color:#7c3aed}
+  button.q.centrale{border-left:3px solid var(--primary)} button.q.ammessa{border-left:3px solid #94a3b8}
+  button.q.avanza{border-left:3px solid #7c3aed;background:#f7f3fe}
+  button.q.fuori{border-left:3px solid #e2a23b;opacity:.85}
+  .b.restituzione{background:#ede9fe;color:#6d28d9}
+  .b.consapevolezza{background:#e6f4ef;color:#0f766e} .b.emersione{background:#fce7f3;color:#be185d} .b.proposta{background:#e7f3f1;color:var(--primary-d)}
+  .tag.ric{background:#e9f8ee;color:#15803d} .tag.pri{background:#fff4e0;color:#b45309} .tag.cov{background:#e7f3f1;color:var(--primary-d)}
+  .msg.sys.ok{color:#15803d;background:#e9f8ee;border:1px solid #c5ead2;border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="row1"><div class="brand">Consulente Simulator <small>V9 · Macchina a fasi</small></div><div class="moves" id="moves"></div></div>
+    <div class="stat-strip" id="strip"></div>
+  </div>
+  <div class="grid">
+    <div><div class="card pad" id="main"></div></div>
+    <div><div class="card pad doss" id="dossier"></div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const CONSAP_LIQUIDITA={
+ osservazione:"Quindi, oggi, gran parte di ciò che mette da parte resta ferma lì, sul conto.",
+ curiosita:"Le faccio una domanda, così ci ragioniamo insieme: secondo lei, quella cifra, fra dieci anni, comprerà le stesse cose di oggi?",
+ proiezione:"Si immagini fra dieci anni: la cifra sul conto è identica. Solo che, con quella, allora ci fa la metà delle cose. Come la farebbe sentire?",
+ contrasto:"C'è una cosa che stride: da un lato lavora per mettere da parte, dall'altro quel risparmio resta immobile e, fermo, ogni anno perde un pezzetto.",
+ implicazione:"Con il tempo, fermo, quel denaro perde potere d'acquisto. Anche non scegliere, in fondo, è una scelta.",
+ reazioni:{
+  piena:["Non ci avevo mai pensato, in effetti.","...Però è vero. Non l'avevo mai vista così.","Accidenti. Detta così, cambia le cose."],
+  parziale:["Capisco cosa intende.","Sì, un fondo di verità c'è.","Mh. Può starci, in effetti."],
+  resiste:["Ci ho riflettuto, ma muovere quei soldi mi preoccupa.","Lo so, però mi sento più tranquillo a saperli lì, fermi."],
+  minimizza:["Può essere, ma preferisco comunque la liquidità.","Sarà, ma io dormo meglio a saperli sul conto."],
+  controarg:["Sì, ma oggi i mercati sono un terno al lotto.","E se poi arriva un'altra crisi? Fermi, almeno, non li perdo."],
+  ripetuto:["Su questo ci eravamo già arrivati.","Sì, quello l'ho capito."]
+ }
+};
+
+const MAX_MOVES = 12, SOGLIA_CONSAP = 50, SATURA = 2;
+const CHARGED = ["nostalgia","orgoglio","paura","preoccupazione"];
+const clamp=v=>Math.max(0,Math.min(100,Math.round(v)));
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ============================================================
+   GENERATORE — Tratti, Archetipi, Content Pack
+   ============================================================ */
+// Ogni tratto: deltas alle stat di partenza + moltiplicatori di reazione alle restituzioni.
+const TRATTI = {
+  orgoglioso:{stat:{fiducia:5}, emp:1.3, ins:1.0, rifor:1.1, prematura:1.0, soglia:0, desc:"orgoglioso"},
+  ottimista:{stat:{pressione:-3,consapevolezza:-2}, emp:1.0, ins:0.9, rifor:1.0, prematura:1.0, soglia:0, minimizza:0.6, desc:"ottimista"},
+  razionale:{stat:{}, emp:0.6, ins:1.35, rifor:1.0, prematura:1.1, soglia:0, desc:"razionale"},
+  sbrigativo:{stat:{pressione:4}, emp:0.9, ins:1.0, rifor:0.85, prematura:1.2, soglia:-1, desc:"sbrigativo"},
+  diffidente:{stat:{fiducia:-8,apertura:-4}, emp:0.7, ins:0.8, rifor:0.8, prematura:1.5, soglia:0, desc:"diffidente"},
+  riservato:{stat:{apertura:-4}, emp:0.9, ins:0.9, rifor:1.0, prematura:1.2, soglia:0, desc:"riservato"},
+  ansioso:{stat:{pressione:3}, emp:1.2, ins:1.1, rifor:1.0, prematura:1.0, soglia:0, desc:"ansioso"},
+  storico:{stat:{fiducia:10}, emp:1.0, ins:1.0, rifor:0.55, prematura:1.0, soglia:0, desc:"cliente storico", relazione:0.7}
+};
+
+// Frasi di reazione alla RESTITUZIONE ARTIFICIALE, per causa e tratto (fallback generico).
+const REAZIONI = {
+  generico:{
+    empatia_neutra:["Beh... non c'era bisogno di farne un dramma.","Sì, comunque... era solo un dato."],
+    insight_vuoto:["Non so se arriverei a dire questo.","Mi sta un po' mettendo in bocca parole, no?"],
+    eccesso:["Sì, ho capito che mi ascolta...","Sì, comunque. Vada pure avanti."]
+  },
+  razionale:{ empatia_neutra:["Restiamo ai fatti, se non le dispiace."], insight_vuoto:["Su cosa si basa, di preciso? Mi pare un salto."], eccesso:["Apprezzo, ma possiamo essere concreti?"] },
+  diffidente:{ empatia_neutra:["Mi sembra che stia recitando una parte."], insight_vuoto:["Eh, ci va piano con le conclusioni."], eccesso:["Lei mi gira intorno. Dove vuole arrivare?"] },
+  sbrigativo:{ empatia_neutra:["Sì sì, andiamo avanti."], insight_vuoto:["Va be', ma il punto qual è?"], eccesso:["Guardi, ho poco tempo. Al sodo."] },
+  ansioso:{ empatia_neutra:["Ecco, ora mi mette ansia per niente."], insight_vuoto:["Davvero? Mi sta spaventando senza motivo?"], eccesso:["Mi sta confondendo, una cosa per volta."] }
+};
+function reazioneArtificiale(causa, tratti){
+  for(const t of tratti){ if(REAZIONI[t] && REAZIONI[t][causa]) return pick(REAZIONI[t][causa]); }
+  return pick(REAZIONI.generico[causa]);
+}
+
+/* ============================================================
+   VARIABILITÀ LINGUISTICA — voce del cliente + pool di varianti
+   (vive solo in fase di generazione: il motore logico non cambia)
+   ============================================================ */
+// La "voce" è il registro dominante, derivato dai tratti. Due clienti con lo
+// stesso bisogno ma voce diversa pescano da pool diversi → sembrano persone diverse.
+function voceDi(tratti){
+  if(tratti.includes("diffidente")) return "diffidente";
+  if(tratti.includes("razionale") && tratti.includes("sbrigativo")) return pick(["razionale","sbrigativo"]);
+  if(tratti.includes("razionale")) return "razionale";
+  if(tratti.includes("sbrigativo")) return "sbrigativo";
+  if(tratti.includes("orgoglioso")) return pick(["orgoglioso","emotivo"]);
+  return "emotivo";
+}
+// catena di fallback fra registri affini, così un pool incompleto degrada con grazia
+const VOCE_FALLBACK={orgoglioso:["emotivo"],emotivo:["orgoglioso"],sbrigativo:["razionale"],razionale:["sbrigativo"],diffidente:["razionale","sbrigativo"]};
+function variante(pool, voce){
+  if(!pool) return null;
+  const chain=[voce,...(VOCE_FALLBACK[voce]||[]),"neutro"];
+  for(const v of chain){ if(pool[v] && pool[v].length) return pick(pool[v]); }
+  return null;
+}
+
+// Pool di battute per nodo conversazionale. Ogni nodo: più registri × più varianti.
+// (mancano slot? fill() li risolve dopo la scelta)
+const VARIANTI={
+  // ---- COMMERCIANTE (voce: orgoglioso | emotivo) ----
+  rel_storia:{
+    orgoglioso:["Era di mio padre. L'ho preso io a trent'anni e l'ho fatto crescere con le mie mani.","Bottega di famiglia. Trent'anni che la mando avanti io, e si vede."],
+    emotivo:["Era di mio padre... l'ho preso io a trent'anni. È più di un lavoro, per me.","Me l'ha lasciato mio padre. Ogni volta che apro mi torna in mente lui."],
+    neutro:["Era di mio padre, l'ho rilevato io a trent'anni."]
+  },
+  rel_negozio:{
+    orgoglioso:["Lo mando avanti da solo, e bene. {coniuge} dà una mano, ma il timone è il mio.","Faccio tutto io e funziona. Non mi sono mai tirato indietro."],
+    emotivo:["Lo porto avanti praticamente da solo... {coniuge} aiuta quando può, ma il grosso è sulle mie spalle.","Da solo, quasi sempre. A volte è pesante, non lo nascondo."],
+    neutro:["Lo gestisco quasi tutto io. {coniuge} aiuta quando può."]
+  },
+  fam_chi:{
+    orgoglioso:["{f1} ha {e1} anni, {f2} {e2}. Due in gamba, glielo dico io.","{f1} {e1}, {f2} {e2}. Crescono bene, e crescono le spese!"],
+    emotivo:["{f1} ha {e1} anni, {f2} {e2}... crescono in fretta. Troppo in fretta.","I ragazzi: {f1} {e1}, {f2} {e2}. Sono tutto, per me."],
+    neutro:["{f1} ha {e1} anni e {f2} {e2}."]
+  },
+  fu_padre:{
+    orgoglioso:["È mancato cinque anni fa. Ma quello che mi ha insegnato lo porto avanti ogni giorno.","Cinque anni fa. Gli ho promesso che la bottega non chiudeva, e così è."],
+    emotivo:["È mancato cinque anni fa... ma quando alzo la saracinesca è un po' come tenerlo vivo.","Non c'è più da cinque anni. Mi manca, sa. Ogni mattina."],
+    neutro:["È mancato cinque anni fa."]
+  },
+  fu_significato:{
+    orgoglioso:["Tutto. Trent'anni di vita, ogni giorno, da solo. E la mia famiglia mangia di questo.","È la mia opera. Quello che ho costruito quando nessuno ci credeva."],
+    emotivo:["Tutto... la mia famiglia mangia di questo. Trent'anni della mia vita ci sono dentro.","È casa mia, più di casa mia. Non saprei chi sono senza."],
+    neutro:["È tutto. La mia famiglia vive di questo."]
+  },
+  fu_continuita:{
+    orgoglioso:["I figli, magari. Ma oggi regge tutto su di me. Se manco io chiude, ed è una cosa che non sopporto pensare.","Vorrei lasciarlo ai ragazzi. Però, diciamolo: senza di me, domani, chiude."],
+    emotivo:["I figli, magari... ma è tutto sulle mie spalle. Se manco io chiude. Non ci voglio pensare.","Non lo so... se a me succede qualcosa, tutto questo finisce. Mi stringe lo stomaco solo a dirlo."],
+    neutro:["I figli forse, ma per ora dipende tutto da me."]
+  },
+  fu_vendite:{
+    orgoglioso:["Calate, lo ammetto. C'è l'online, il quartiere è cambiato. Ma io resisto.","Sono giù. Però chi resiste sono ancora io: gli altri han chiuso."],
+    emotivo:["Calate... c'è l'online, il quartiere non è più quello. Mi dà pensiero, la notte.","Vanno giù, e mi preoccupa. Mi chiedo fino a quando reggo."],
+    neutro:["Calate negli ultimi due anni. Mi preoccupa."]
+  },
+  fu_solo:{
+    orgoglioso:["Senza di me chiude, è così. Non ci avevo pensato fino in fondo, ma è la verità.","Chiude. Faccio tutto io: è il mio vanto e, lo capisco ora, anche il mio punto debole."],
+    emotivo:["...Senza di me chiude. Non ci avevo mai pensato fino in fondo. Adesso mi mette ansia.","Chiude, sì. Detta così mi fa un certo effetto."],
+    neutro:["Senza di me chiuderebbe. Non ci avevo pensato così."]
+  },
+  fu_se_manco:{
+    orgoglioso:["{coniuge} non reggerebbe negozio e casa insieme. Andremmo a fondo coi risparmi. E non lo accetterei.","Crollerebbe tutto. {coniuge} da sola non ce la farebbe, e a me l'idea fa venire i nervi."],
+    emotivo:["{coniuge} non reggerebbe negozio e casa insieme... ci mangeremmo i risparmi e poi? Mi gela il sangue.","Andremmo a fondo. {coniuge} sola, i ragazzi... mi si chiude la gola a pensarci."],
+    neutro:["{coniuge} non reggerebbe tutto. Finiremmo i risparmi in fretta."]
+  },
+  prot_implica_core:{
+    orgoglioso:["...Non lo so. Mi mangerei i risparmi, e poi? Messa così non mi piace per niente.","Coi risparmi un po' tiro. Ma poi? Non ho una risposta, e questo mi pesa."],
+    emotivo:["...Non lo so. Mi mangerei i risparmi e poi? Messa così fa paura davvero.","Non ci arrivo. Mi mangerei tutto e resterei a mani vuote. Mi spaventa."],
+    neutro:["Non lo so. Userei i risparmi, ma poi non saprei."]
+  },
+  prev_pensione:{
+    orgoglioso:["No, niente. Verso l'INPS e basta: non ho mai avuto tempo per queste cose.","Solo i contributi. Ho sempre pensato che il negozio fosse la mia pensione."],
+    emotivo:["No... niente. Verso l'INPS e basta. Non ci ho mai voluto pensare, a dire il vero.","Solo l'INPS. Mi mette un po' d'angoscia, se ci penso."],
+    neutro:["No, solo i contributi INPS."]
+  },
+  pat_liquidita:{
+    orgoglioso:["Saranno novantamila, fermi sul conto. Frutto del mio lavoro: a muoverli ci penso bene.","Novantamila, sul conto. Me li sono sudati, mica li butto in giro."],
+    emotivo:["Saranno novantamila... fermi sul conto. Muoverli mi fa paura, lo confesso.","Novantamila lì fermi. So che è sbagliato, ma toccarli mi mette ansia."],
+    neutro:["Circa novantamila fermi sul conto."]
+  },
+  area_protezione:{
+    orgoglioso:["Tutto. Apro, ordino, vendo, chiudo: ogni cosa la faccio io. È la mia forza.","Dipende tutto da me, ed è giusto così. Però sì, senza di me non va avanti un giorno."],
+    emotivo:["Tutto, tutto da me... apro, vendo, chiudo. Senza di me non va avanti un giorno, e questo mi spaventa.","Faccio ogni cosa io. Detta ad alta voce, mi rendo conto di quanto sia fragile."],
+    neutro:["Dipende tutto da me: apro, vendo, chiudo. Faccio tutto io."]
+  },
+  prot_paura:{
+    orgoglioso:["Che se a me succede qualcosa, loro restino senza. Non sarei stato all'altezza, ecco cosa temo.","Di lasciarli scoperti. Ho costruito tanto: non sopporterei che crollasse per colpa mia."],
+    emotivo:["Che se a me succede qualcosa, loro restino senza niente... ecco. È il mio incubo.","Di non esserci e lasciarli soli a gestire tutto. Mi fa stringere il cuore."],
+    neutro:["Che, se mi succede qualcosa, loro restino senza nulla."]
+  },
+  // ---- PROFESSIONISTA / DIFFIDENTE (voce: razionale | sbrigativo | diffidente) ----
+  rel_apri:{
+    razionale:["Bene, anche troppo lavoro. Il problema è la regolarità: mesi pieni, mesi vuoti.","Va bene, oggettivamente. Ma il flusso è discontinuo: questo è il punto."],
+    sbrigativo:["Tanto lavoro. Altalenante, però. Mesi su, mesi giù.","Bene, di corsa come sempre. A singhiozzo, comunque."],
+    diffidente:["Va... bene. Perché, dove vuole arrivare con questa domanda?","Lavoro ne ho. Altalenante. Ma non sono qui per le chiacchiere."],
+    neutro:["Bene, ma il lavoro è altalenante."]
+  },
+  rel_obiettivi:{
+    razionale:["Vorrei rallentare prima dei sessanta. Il 'come', però, non l'ho ancora strutturato.","Smettere presto, idealmente. Ma è un'intenzione, non un piano."],
+    sbrigativo:["Smettere presto, prima dei sessanta. Come, ancora non lo so.","Presto. Il prima possibile. Dettagli zero, lo ammetto."],
+    diffidente:["Rallentare presto. Ma sono cose mie, vediamo dove vuole portarmi.","Prima dei sessanta. Se ci arrivo, e se mi fido di chi mi consiglia."],
+    neutro:["Vorrei smettere prima dei sessanta, ma non ho un piano."]
+  },
+  fu_redd:{
+    razionale:["Poco regolare. La media è alta, ma la varianza pure: è il dato che conta.","Irregolare. Alto in media, concentrato in pochi mesi. Numericamente è così."],
+    sbrigativo:["Irregolare. Alto, ma a singhiozzo.","A singhiozzo. Mesi grassi, mesi magri."],
+    diffidente:["Dipende. Perché, le serve per vendermi qualcosa di preciso?","Variabile. Non amo dare cifre a chi non conosco bene."],
+    neutro:["Poco regolare: alto in media, ma a intermittenza."]
+  },
+  fu_dip:{
+    razionale:["No. Se mi fermo io, si ferma il fatturato. È un single point of failure, lo so.","Nessuna continuità: il reddito è legato alle mie ore. Limite strutturale."],
+    sbrigativo:["No. Mi fermo io, si ferma tutto. Punto.","Zero. Senza di me non gira niente."],
+    diffidente:["No... e non mi piace ammetterlo a uno che ho appena conosciuto.","Se mi fermo si ferma tutto. Lo so da me, non serve me lo dica lei."],
+    neutro:["No. Se mi fermo io, si ferma tutto."]
+  },
+  fu_studio:{
+    razionale:["Resta sul conto, fermo. Lo movimento a sensazione, senza un criterio: lo riconosco.","Liquidità sul conto. Gestione discrezionale, cioè nessuna gestione."],
+    sbrigativo:["Sul conto, fermo. Muovo a istinto, ogni tanto.","Conto corrente. Fermo lì, e basta."],
+    diffidente:["Sul conto. Dove altro? Dei prodotti non mi fido granché.","Fermo, al sicuro. Almeno lì so dov'è."],
+    neutro:["Sul conto, fermo. Lo gestisco a sensazione."]
+  },
+  fu_smettere:{
+    razionale:["No, niente di strutturato oltre la cassa. Conto sul reddito da lavoro, il che è poco lungimirante.","Nulla di pianificato. È un buco nel mio ragionamento, lo ammetto."],
+    sbrigativo:["No, niente. Conto sul lavoro finché reggo.","Niente di che. La cassa e stop."],
+    diffidente:["No. E le previdenze che mi hanno proposto puzzavano di provvigione.","Niente. Ho visto troppi 'piani' fatti per chi li vende, non per me."],
+    neutro:["No, niente di strutturato oltre la cassa professionale."]
+  },
+  prev_impl:{
+    razionale:["...Messa così, no. I conti non tornano, e non li ho mai fatti davvero.","Obiettivamente è un disallineamento: l'obiettivo c'è, lo strumento no."],
+    sbrigativo:["...No, messa così non torna. Mai fatti, quei conti.","Eh. Detta così, no. Punto debole, lo vedo."],
+    diffidente:["...Mah. Forse ha un punto. Ma resto cauto.","Non torna, lo concedo. Ci penserò con i miei tempi."],
+    neutro:["...Messa così non tornano. Non ho mai fatto quei conti."]
+  },
+  prot_impl:{
+    razionale:["Intaccherei i risparmi. Non avevo quantificato il rischio in questi termini.","Erosione del capitale. Espresso così, il rischio è più concreto di quanto pensassi."],
+    sbrigativo:["Tiro coi risparmi. Ma sì, è un rischio che non avevo messo a fuoco.","Risparmi. Però ok, è un buco."],
+    diffidente:["Userei i risparmi. Vediamo, però non mi faccia fretta.","Coi risparmi. Lei dipinge scenari foschi: è il vostro mestiere, no?"],
+    neutro:["Intaccherei i risparmi. Non l'avevo inquadrato così."]
+  },
+  area_previdenza:{
+    razionale:["No. È il classico 'ci penserò' che, dato razionalmente, è un errore.","Nulla. So che è subottimale, eppure è la situazione."],
+    sbrigativo:["No. Il solito 'poi ci penso'.","Niente. Rimandato a oltranza."],
+    diffidente:["No. E preferisco capire chi ho davanti prima di muovermi.","Niente. Mi sono già scottato a fidarmi in fretta."],
+    neutro:["No, è il classico 'ci penserò'."]
+  }
+};
+
+// Battute di ACCETTAZIONE del cliente dopo una restituzione aderente (per registro).
+const ACCETTA={
+  riformulazione:{
+    neutro:["Esatto. È proprio così.","Sì, ha colto il punto."],
+    orgoglioso:["Esatto. E non è poco, glielo dico io.","Proprio così. Trent'anni non si spiegano in due parole."],
+    emotivo:["Sì... è bello sentirselo dire.","Ecco, esatto. Mi fa piacere che capisca."],
+    razionale:["Esatto, ha sintetizzato bene.","Corretto. È precisamente quel punto."],
+    sbrigativo:["Sì, è quello. Andiamo.","Esatto. Bene."],
+    diffidente:["...Sì. Vedo che almeno ascolta.","Mah, sì. È così."]
+  },
+  empatia:{
+    neutro:["...Sì. Grazie, davvero.","Eh. Lei mi capisce."],
+    orgoglioso:["...Sì. Pochi lo capiscono, sa.","Grazie. È roba di una vita."],
+    emotivo:["...Sì. Mi commuove un po', a dirla tutta.","Grazie. Non me lo dice mai nessuno."],
+    razionale:["Sì. Apprezzo che non lo banalizzi.","...Esatto. Non lo dico spesso, questo."],
+    sbrigativo:["Sì, va be'. Grazie comunque.","Eh. Comunque sì."],
+    diffidente:["...Non me l'aspettavo, da lei.","Mah. Sì, è così. Grazie."]
+  },
+  insight:{
+    neutro:["...Non l'avevo collegato così. Ha ragione.","Però. Messa in fila, la cosa cambia faccia."],
+    orgoglioso:["...Caspita. Detta così non ci avevo pensato.","Però. E pensavo di sapere tutto del mio."],
+    emotivo:["...Mamma mia. Messa così mi mette i brividi.","Però. Non l'avevo mai vista così, e mi colpisce."],
+    razionale:["Interessante. Il collegamento regge.","...Logicamente non fa una piega. Non l'avevo inquadrato."],
+    sbrigativo:["...Ah. Ok, questo è un punto vero.","Però. Sì, questo conta."],
+    diffidente:["...Mah. In effetti il ragionamento sta in piedi.","Non pensavo dicesse qualcosa di così sensato. Invece."]
+  }
+};
+function accetta(tipo){ const p=ACCETTA[tipo]; return pick((p[CL.voce]&&p[CL.voce].length)?p[CL.voce]:p.neutro); }
+
+// ---- CONTENT PACKS ---------------------------------------------------------
+// Le DOMANDE usano slot {f1}{f2}{coniuge} riempiti in generazione.
+/* ============================================================
+   MODELLO A SCENARI — Cataloghi condivisi + ricette di scenario
+   L'archetipo campiona uno SCENARIO (il problema) e una PERSONALITÀ
+   (il carattere) in modo indipendente. Il motore legge solo le strutture
+   filtrate: nessuna funzione di gioco cambia.
+   ============================================================ */
+const CATALOGHI = {
+  commerciante:{
+    registro:"popolare",
+    statBase:{fiducia:55,apertura:35,pressione:10,consapevolezza:5},
+    visibili:["Cliente da {anniCliente} anni","Possiede una polizza RC Auto","Titolare di un'attività commerciale"],
+    identita:()=>{const f=[["Marco",16],["Giulia",13],["Luca",15],["Sara",12]]; const a=pick(f),b=pick(f.filter(x=>x[0]!==a[0]));
+      return {coniuge:pick(["Maria","Rosa","Anna"]), f1:a[0], e1:a[1], f2:b[0], e2:b[1], anniCliente:pick([5,6,7,8]), eta:pick([47,49,52,54]), mestiere:"commerciante"};},
+    NEED_AREA:{protezione_reddito:"protezione",previdenza:"previdenza",investimento_liquidita:"patrimonio",risparmio_figli:"figli",passaggio_generazionale:"successione",protezione_salute:"salute"},
+    THEMES:{famiglia_figli:["famiglia","figli","futuro"],attivita:["attività","sacrificio","eredità"],protezione:["protezione","continuità","paura"],previdenza:["pensione"],patrimonio:["liquidità","patrimonio"],salute:["salute","fragilità"],successione:["successione","eredità"]},
+    INFO:{
+      attivita:{categoria:"Attività",livello:1,temi:["attività"],bisogni:["protezione_reddito","passaggio_generazionale"]},
+      famiglia:{categoria:"Famiglia",livello:1,temi:["famiglia"],bisogni:["risparmio_figli"]},
+      calo_vendite:{categoria:"Attività",livello:2,temi:["attività"],bisogni:["protezione_reddito"]},
+      liquidita:{categoria:"Patrimonio",livello:2,temi:["liquidità"],bisogni:["investimento_liquidita"]},
+      futuro_figli:{categoria:"Obiettivi",livello:3,temi:["figli"],bisogni:["risparmio_figli"]},
+      paura_famiglia:{categoria:"Protezione",livello:3,temi:["paura"],bisogni:["protezione_reddito"]},
+      no_previdenza:{categoria:"Previdenza",livello:2,temi:["pensione"],bisogni:["previdenza"]},
+      eta_eredi:{categoria:"Successione",livello:2,temi:["successione"],bisogni:["passaggio_generazionale"]},
+      valore_avviamento:{categoria:"Patrimonio",livello:2,temi:["patrimonio"],bisogni:["passaggio_generazionale","investimento_liquidita"]},
+      problema_salute:{categoria:"Salute",livello:2,temi:["salute"],bisogni:["protezione_salute","previdenza"]},
+      fragilita:{categoria:"Salute",livello:3,temi:["fragilità"],bisogni:["protezione_salute","passaggio_generazionale"]}
+    },
+    INFO_TESTO:{
+      attivita:"Manda avanti il negozio quasi da solo: dipende tutto da lui.",
+      famiglia:"Sposato con {coniuge}. Due figli: {f1} ({e1}) e {f2} ({e2}).",
+      calo_vendite:"Le vendite sono calate negli ultimi due anni.",
+      liquidita:"Circa 90.000 € fermi e inutilizzati sul conto.",
+      futuro_figli:"Sogna di far studiare i figli all'università.",
+      paura_famiglia:"Teme di lasciare la famiglia scoperta se l'attività si fermasse.",
+      no_previdenza:"Nessun piano pensionistico: solo l'INPS.",
+      eta_eredi:"Si avvicina ai sessanta e non ha una successione chiara per il negozio.",
+      valore_avviamento:"Il negozio ha un avviamento costruito in trent'anni: clienti, nome, posizione.",
+      problema_salute:"Un recente problema di salute lo ha costretto a fermarsi per settimane.",
+      fragilita:"Ha toccato con mano la propria fragilità e ci pensa spesso."
+    },
+    BISOGNI:{
+      protezione_reddito:{insight:"Da ciò che mi racconta, mi colpisce come tutto — casa, famiglia, l'attività — poggi su un'unica spalla: la sua.",label:"Protezione del reddito",requisiti:[["attivita"],["calo_vendite","paura_famiglia"]],propostaIdeale:"p_protezione",trappole:["p_vita_generica"]},
+      risparmio_figli:{insight:"Da ciò che mi dice, i suoi figli sono il filo di tutto: e il loro domani, oggi, è affidato più alla speranza che a un piano.",label:"Risparmio per i figli",requisiti:[["futuro_figli"]],propostaIdeale:"p_accumulo",trappole:[]},
+      investimento_liquidita:{consap:CONSAP_LIQUIDITA,insight:"Da ciò che mi dice, quei soldi fermi sul conto non sono una scelta tranquilla: con l'inflazione, in silenzio, ogni anno valgono un po' meno.",label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gestione",trappole:["p_aggressivo"]},
+      passaggio_generazionale:{insight:"Da ciò che mi racconta, quello che ha costruito è legato a lei più di quanto sembri: senza un disegno, ciò che passa a chi viene dopo resta appeso a un punto interrogativo.",label:"Passaggio generazionale",requisiti:[["attivita"],["eta_eredi","valore_avviamento"]],propostaIdeale:"p_passaggio",trappole:["p_vendi_subito"]},
+      protezione_salute:{insight:"Da ciò che mi dice, la sua salute è la base silenziosa di tutto il resto: ed è proprio la cosa che diamo per scontata finché regge.",label:"Protezione salute",requisiti:[["problema_salute"],["fragilita"]],propostaIdeale:"p_salute",trappole:["p_infortuni"]},
+      previdenza:{insight:"Da ciò che mi racconta, al 'dopo' — quando rallenterà — finora non ha mai dato una forma: è un pezzo di futuro lasciato in bianco.",label:"Previdenza",requisiti:[["no_previdenza"]],propostaIdeale:"p_previdenza",trappole:[]}
+    },
+    PROPOSTE:{
+      p_protezione:{bisogno:"protezione_reddito",nome:"Protezione del reddito / continuità d'impresa",desc:"Indennità e rendita se un imprevisto lo ferma.",pert:95},
+      p_vita_generica:{bisogno:"protezione_reddito",nome:"Polizza vita generica",desc:"Capitale ai beneficiari in caso di decesso.",pert:50},
+      p_accumulo:{bisogno:"risparmio_figli",nome:"Piano di accumulo studi",desc:"Capitale per l'università dei figli.",pert:90},
+      p_gestione:{bisogno:"investimento_liquidita",nome:"Gestione prudente della liquidità",desc:"Fa lavorare la liquidità con rischio contenuto.",pert:85},
+      p_aggressivo:{bisogno:"investimento_liquidita",nome:"Investimento azionario aggressivo",desc:"Massima esposizione ai mercati.",pert:30},
+      p_passaggio:{bisogno:"passaggio_generazionale",nome:"Pianificazione del passaggio",desc:"Strumenti per trasferire valore e liquidità agli eredi.",pert:92},
+      p_vendi_subito:{bisogno:"passaggio_generazionale",nome:"Liquidare e chiudere",desc:"Vendere in fretta e monetizzare.",pert:40},
+      p_salute:{bisogno:"protezione_salute",nome:"Copertura salute / malattie gravi",desc:"Protegge reddito e famiglia in caso di malattia o non autosufficienza.",pert:92},
+      p_infortuni:{bisogno:"protezione_salute",nome:"Polizza infortuni base",desc:"Copre solo gli infortuni, non la malattia.",pert:50},
+      p_previdenza:{bisogno:"previdenza",nome:"Piano previdenziale (PIP)",desc:"Integra la pensione INPS.",pert:90}
+    },
+    DOMANDE:[
+      {id:"rel_saluto",cat:"Relazione",tipo:"relazione",requires:{opening:true},tags:["famiglia","attività"],emotion:null,spawns:["fam_chi"],
+       testo:"Buongiorno, che piacere rivederla. Come va, a parte il lavoro?",eff:{fiducia:4,apertura:6,pressione:-2},reply:"Eh, si tira avanti. La famiglia bene. Il negozio... di quello magari parliamo."},
+      {id:"rel_storia",cat:"Relazione",tipo:"relazione",requires:{opening:true},tags:["eredità","orgoglio","attività"],emotion:"nostalgia",spawns:["fu_padre","fu_significato","fu_continuita"],
+       testo:"Come ha iniziato con il negozio?",eff:{fiducia:6,apertura:6,pressione:-2},reply:"Era di mio padre, l'ho preso io a trent'anni. È più di un lavoro per me."},
+      {id:"rel_negozio",cat:"Attività",tipo:"scoperta",requires:{opening:true},tags:["attività"],emotion:null,spawns:["fu_vendite","fu_solo"],rivela:["attivita"],
+       testo:"Come procede il negozio in questo periodo?",eff:{fiducia:2,apertura:5,pressione:0},reply:"Lo mando avanti quasi da solo. {coniuge} aiuta quando può, ma il grosso è sulle mie spalle."},
+      {id:"fam_chi",cat:"Famiglia",tipo:"scoperta",requires:{opening:true},tags:["famiglia","figli"],emotion:null,spawns:["fu_figli_studio"],rivela:["famiglia"],
+       testo:"E la famiglia? I ragazzi crescono?",eff:{fiducia:3,apertura:4,pressione:0},reply:"{f1} ha {e1} anni, {f2} {e2}. Crescono in fretta... e crescono le spese!"},
+      {id:"fu_padre",cat:"Relazione",tipo:"relazione",requires:{asked:["rel_storia"]},tags:["eredità","famiglia","nostalgia"],emotion:"nostalgia",deepens:"nostalgia",spawns:[],
+       origin:"Ha nominato suo padre",testo:"Suo padre è ancora coinvolto, in qualche modo?",eff:{fiducia:5,apertura:4,pressione:-1},reply:"È mancato cinque anni fa. Ma quando alzo la saracinesca è un po' come tenerlo vivo."},
+      {id:"fu_significato",cat:"Relazione",tipo:"scoperta",requires:{asked:["rel_storia"]},tags:["orgoglio","attività","sacrificio"],emotion:"orgoglio",deepens:"orgoglio",spawns:["fu_continuita"],rivela:["attivita"],
+       origin:"Cosa rappresenta per lui",testo:"Cosa rappresenta oggi quel negozio per lei?",eff:{fiducia:5,apertura:4,pressione:0},reply:"Tutto. La mia famiglia mangia di questo. Trent'anni di vita, ogni giorno, da solo."},
+      {id:"fu_continuita",cat:"Protezione",tipo:"scoperta",requires:{asked:["rel_storia"]},tags:["continuità","figli","paura","futuro"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_se_manco","prot_implica_core"],rivela:["attivita","paura_famiglia"],
+       origin:"Ha parlato di eredità: e il futuro?",testo:"Ha mai pensato a chi lo porterà avanti, un domani?",eff:{fiducia:4,apertura:3,pressione:-1},reply:"I figli, magari... ma è tutto sulle mie spalle. Se manco io, chiude. Non ci voglio pensare."},
+      {id:"fu_vendite",cat:"Attività",tipo:"scoperta",requires:{asked:["rel_negozio"]},tags:["attività","paura"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:[],rivela:["calo_vendite"],
+       origin:"Sul come va il negozio",testo:"E le vendite, rispetto a qualche anno fa?",eff:{fiducia:1,apertura:3,pressione:0},reply:"Calate. C'è l'online, il quartiere è cambiato. Mi dà pensiero."},
+      {id:"fu_solo",cat:"Protezione",tipo:"scoperta",requires:{asked:["rel_negozio"]},tags:["attività","sacrificio","continuità"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fu_se_manco","prot_implica_core"],rivela:["attivita","paura_famiglia"],
+       origin:"Fa tutto da solo",testo:"Dipende quasi tutto da lei. E se dovesse fermarsi?",eff:{fiducia:3,apertura:3,pressione:0},reply:"...Senza di me chiude. Non ci avevo pensato fino in fondo, ma è così."},
+      {id:"fu_figli_studio",cat:"Obiettivi",tipo:"scoperta",requires:{asked:["fam_chi"]},tags:["figli","futuro"],emotion:null,spawns:["obj_implica_figli"],rivela:["futuro_figli"],
+       origin:"Ha parlato dei figli",testo:"Cosa sognano di fare, i ragazzi?",eff:{fiducia:2,apertura:3,pressione:0},reply:"Mi piacerebbe l'università per loro. Più scelte di quante ne ho avute io."},
+      {id:"prev_pensione",cat:"Previdenza",tipo:"scoperta",requires:{opening:true},tags:["pensione","futuro"],emotion:null,spawns:["prev_implica"],rivela:["no_previdenza"],
+       origin:"La pensione",testo:"Per la pensione ha impostato qualcosa oltre ai contributi?",eff:{fiducia:1,apertura:2,pressione:0},reply:"No, niente. Verso l'INPS e basta."},
+      {id:"pat_liquidita",cat:"Patrimonio",tipo:"scoperta",requires:{opening:true},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_implica"],rivela:["liquidita"],
+       origin:"I risparmi",testo:"Riesce a mettere da parte? E dove lo tiene?",eff:{fiducia:1,apertura:3,pressione:0},reply:"Saranno novantamila, fermi sul conto. Mi fido poco a muoverli."},
+      {id:"disc_eta_eredi",cat:"Successione",tipo:"scoperta",requires:{opening:true},tags:["successione","futuro"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["impl_passaggio"],rivela:["eta_eredi"],
+       origin:"Gli anni che passano",testo:"Guardando avanti: ha in mente chi prenderà il suo posto, un giorno?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Non ho una risposta. Nessuno dei ragazzi sembra volerlo, e io non ringiovanisco."},
+      {id:"disc_avviamento",cat:"Patrimonio",tipo:"scoperta",requires:{asked:["rel_negozio"]},tags:["patrimonio","eredità"],emotion:"orgoglio",deepens:"orgoglio",spawns:["impl_passaggio"],rivela:["valore_avviamento"],
+       origin:"Trent'anni di attività",testo:"Un'attività così, con il suo nome e i suoi clienti, oggi vale parecchio. Ci ha mai pensato?",eff:{fiducia:3,apertura:3,pressione:0},reply:"In effetti no. Per me è 'il negozio'. Ma sì, varrà qualcosa, l'ho costruito pezzo a pezzo."},
+      {id:"disc_salute",cat:"Salute",tipo:"scoperta",requires:{opening:true},tags:["salute","paura"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["disc_fragilita","impl_salute"],rivela:["problema_salute"],
+       origin:"Come sta, di salute",testo:"E lei, di salute? Tutto a posto in questi mesi?",eff:{fiducia:3,apertura:3,pressione:0},reply:"Ho avuto un problema, mi sono fermato qualche settimana. Mi ha spaventato, le dico la verità."},
+      {id:"disc_fragilita",cat:"Salute",tipo:"scoperta",requires:{asked:["disc_salute"]},tags:["fragilità","paura","famiglia"],emotion:"paura",deepens:"paura",spawns:["impl_salute"],rivela:["fragilita"],
+       origin:"Lo spavento di fermarsi",testo:"Cosa le è passato per la testa, in quelle settimane fermo?",eff:{fiducia:4,apertura:3,pressione:-1},reply:"Che non sono eterno. E che se mi succede qualcosa di serio, tutto crolla. Loro per primi."},
+      {id:"prot_implica_core",cat:"Protezione",tipo:"implicazione",target:"protezione_reddito",requires:{need:"protezione_reddito"},tags:["continuità","paura","liquidità"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:30,spawns:[],
+       origin:"Il bisogno di protezione è emerso",testo:"Sei mesi senza entrate: affitto, scuola e casa non si fermano. Con quali soldi ci arrivereste?",eff:{fiducia:5,apertura:2,pressione:-1},reply:"...Non lo so. Mi mangerei i risparmi, e poi? Messa così fa paura davvero."},
+      {id:"fu_se_manco",cat:"Protezione",tipo:"implicazione",target:"protezione_reddito",requires:{need:"protezione_reddito"},tags:["continuità","paura","famiglia"],emotion:"paura",deepens:"paura",consapBase:18,spawns:["prot_implica_core"],
+       origin:"Su quel «se manco io»",testo:"Mettiamo sei mesi fermo per salute: a casa che succede?",eff:{fiducia:3,apertura:1,pressione:0},reply:"{coniuge} non reggerebbe negozio e casa insieme. Andremmo a fondo coi risparmi. Mi gela."},
+      {id:"prev_implica",cat:"Previdenza",tipo:"implicazione",target:"previdenza",requires:{info:["no_previdenza"],need:"previdenza"},tags:["pensione","futuro","paura"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:16,spawns:[],
+       origin:"Sa che non ha previdenza",testo:"Coi soli contributi, sa che assegno l'aspetta?",eff:{fiducia:2,apertura:1,pressione:0},reply:"Poco, lo immagino. Mai fatto i conti, ma è un bel salto in giù."},
+      {id:"inv_implica",cat:"Investimenti",tipo:"implicazione",target:"investimento_liquidita",requires:{info:["liquidita"],need:"investimento_liquidita"},tags:["liquidità","futuro"],emotion:null,consapBase:14,spawns:[],
+       origin:"Sa dei soldi fermi",testo:"Con l'inflazione, fermi, tra cinque anni comprano meno. È un costo silenzioso.",eff:{fiducia:2,apertura:1,pressione:0},reply:"In effetti perdono valore. Non l'avevo messa così."},
+      {id:"obj_implica_figli",cat:"Obiettivi",tipo:"implicazione",target:"risparmio_figli",requires:{info:["futuro_figli"],need:"risparmio_figli"},tags:["figli","futuro"],emotion:null,consapBase:18,spawns:[],
+       origin:"Il sogno dell'università",testo:"L'università è migliaia di euro l'anno. Arrivarci pronti o all'improvviso cambia tutto.",eff:{fiducia:2,apertura:1,pressione:0},reply:"Non ci ho mai ragionato con metodo. Speravo di trovarmi pronto."},
+      {id:"impl_passaggio",cat:"Successione",tipo:"implicazione",target:"passaggio_generazionale",requires:{need:"passaggio_generazionale"},tags:["successione","eredità","paura"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:26,spawns:[],
+       origin:"Il futuro dell'attività",testo:"Senza un piano, il giorno che lei si ferma quel valore può svanire o finire in liti. È questo che vuole lasciare?",eff:{fiducia:4,apertura:2,pressione:0},reply:"No di certo. Detta così... non ho fatto niente per evitarlo. Mi pesa."},
+      {id:"impl_salute",cat:"Salute",tipo:"implicazione",target:"protezione_salute",requires:{need:"protezione_salute"},tags:["salute","paura","famiglia"],emotion:"paura",deepens:"paura",consapBase:28,spawns:[],
+       origin:"La fragilità emersa",testo:"Una malattia seria oggi le toglie reddito e le aggiunge spese, tutto insieme. Come reggerebbe la famiglia?",eff:{fiducia:4,apertura:2,pressione:-1},reply:"...Non reggerebbe. Adesso lo vedo chiaro, e non è un bel vedere."},
+      {id:"ponte_fam_protezione",tipo:"ponte",cat:"Ponte",from:"famiglia_figli",opens:"protezione",requires:{saturo:"famiglia_figli",needNot:"protezione_reddito"},tags:["figli","continuità","protezione"],emotion:"preoccupazione",spawns:["area_protezione"],
+       framing:"Lo studio dei ragazzi, la casa, i progetti per loro... tutto questo poggia su una cosa sola.",testo:"Posso portarla un attimo su un altro piano? Da cosa dipende, oggi, tutta questa serenità?",reply:"...Dal negozio, certo. Non l'avevo messa così. Mi dica.",eff:{fiducia:3,apertura:1,pressione:1}},
+      {id:"ponte_att_protezione",tipo:"ponte",cat:"Ponte",from:"attivita",opens:"protezione",requires:{saturo:"attivita",needNot:"protezione_reddito"},tags:["attività","continuità","protezione"],emotion:"preoccupazione",spawns:["area_protezione"],
+       framing:"Mi ha raccontato un'attività tutta sulle sue spalle, costruita in trent'anni.",testo:"Cosa regge tutto questo, se un giorno lei dovesse fermarsi?",reply:"...Bella domanda. Non saprei. Continui.",eff:{fiducia:3,apertura:1,pressione:1}},
+      {id:"ponte_att_patrimonio",tipo:"ponte",cat:"Ponte",from:"attivita",opens:"patrimonio",requires:{saturo:"attivita",needNot:"investimento_liquidita"},tags:["attività","liquidità","patrimonio"],emotion:null,spawns:["area_patrimonio"],
+       framing:"Mi parla del lavoro, ma dietro c'è anche ciò che ha messo da parte.",testo:"Quello che il negozio le ha fatto accantonare, oggi dove finisce?",reply:"Fermo sul conto. Non saprei dove altro.",eff:{fiducia:2,apertura:1,pressione:0}},
+      {id:"ponte_fam_figli",tipo:"ponte",cat:"Ponte",from:"famiglia_figli",opens:"figli",requires:{saturo:"famiglia_figli",needNot:"risparmio_figli"},tags:["figli","futuro"],emotion:null,spawns:["area_figli"],
+       framing:"Parla dei ragazzi con un certo orgoglio. E per loro, in concreto?",testo:"Per il loro domani — studio, partenze, scelte — sta costruendo qualcosa?",reply:"Spero di trovarmi pronto. Ma 'costruire' è una parola grossa.",eff:{fiducia:2,apertura:1,pressione:0}},
+      {id:"ponte_att_successione",tipo:"ponte",cat:"Ponte",from:"attivita",opens:"successione",requires:{saturo:"attivita",needNot:"passaggio_generazionale"},tags:["attività","successione","eredità"],emotion:"preoccupazione",spawns:["area_successione"],
+       framing:"Trent'anni di lavoro hanno creato un valore che oggi esiste solo finché c'è lei.",testo:"Possiamo ragionare su cosa ne sarà, di tutto questo, quando lei farà un passo indietro?",reply:"...Argomento che evito. Ma ha ragione. Sentiamo.",eff:{fiducia:2,apertura:1,pressione:1}},
+      {id:"ponte_salute_protezione",tipo:"ponte",cat:"Ponte",from:"salute",opens:"protezione",requires:{saturo:"salute",needNot:"protezione_reddito"},tags:["salute","protezione","famiglia"],emotion:"paura",spawns:["area_protezione"],
+       framing:"Quello spavento le ha mostrato quanto è esposta la famiglia.",testo:"Se quell'imprevisto fosse durato mesi invece che settimane, a casa cosa sarebbe successo?",reply:"...Non oso pensarci. Vada avanti, mi interessa.",eff:{fiducia:3,apertura:1,pressione:0}},
+      {id:"ponte_salute_previdenza",tipo:"ponte",cat:"Ponte",from:"salute",opens:"previdenza",requires:{saturo:"salute",needNot:"previdenza"},tags:["salute","pensione","futuro"],emotion:null,spawns:["area_previdenza"],
+       framing:"Un corpo che inizia a presentare il conto fa pensare anche al dopo.",testo:"E per quando rallenterà, per scelta o per forza: ha previsto qualcosa?",reply:"No. Ci ho pensato in quei giorni, poi ho rimosso.",eff:{fiducia:2,apertura:1,pressione:0}},
+      {id:"area_protezione",cat:"Protezione",tipo:"scoperta",requires:{areaOpen:"protezione"},tags:["protezione","continuità","attività"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["prot_implica_core","fu_se_manco","prot_paura"],rivela:["attivita"],
+       origin:"Nuova area: la continuità",testo:"Torniamo al punto: quanto dipende tutto da lei, in concreto?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Tutto. Apro, ordino, vendo, chiudo. Senza di me non va avanti un giorno."},
+      {id:"prot_paura",cat:"Protezione",tipo:"scoperta",requires:{areaOpen:"protezione"},tags:["protezione","paura","famiglia"],emotion:"paura",deepens:"paura",spawns:["prot_implica_core","fu_se_manco"],rivela:["paura_famiglia"],
+       origin:"Nuova area: ciò che teme",testo:"Pensando alla famiglia: cosa la spaventa di più?",eff:{fiducia:3,apertura:2,pressione:-1},reply:"Che se a me succede qualcosa, loro restino senza niente. Ecco."},
+      {id:"area_previdenza",cat:"Previdenza",tipo:"scoperta",requires:{areaOpen:"previdenza"},tags:["pensione","futuro"],emotion:null,spawns:["prev_implica"],rivela:["no_previdenza"],
+       origin:"Nuova area: la previdenza",testo:"Ha mai impostato qualcosa per la pensione, oltre ai contributi?",eff:{fiducia:2,apertura:2,pressione:0},reply:"No, niente. Verso l'INPS e basta."},
+      {id:"area_patrimonio",cat:"Patrimonio",tipo:"scoperta",requires:{areaOpen:"patrimonio"},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_implica"],rivela:["liquidita"],
+       origin:"Nuova area: il patrimonio",testo:"Quello che mette da parte, dove lo tiene oggi?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Fermo sul conto. Novantamila. Muoverli mi fa paura."},
+      {id:"area_figli",cat:"Obiettivi",tipo:"scoperta",requires:{areaOpen:"figli"},tags:["figli","futuro"],emotion:null,spawns:["obj_implica_figli"],rivela:["futuro_figli"],
+       origin:"Nuova area: il futuro dei figli",testo:"Per i ragazzi, guardando avanti, cosa vorrebbe poter garantire?",eff:{fiducia:2,apertura:2,pressione:0},reply:"L'università, se la vogliono. Senza dover dire 'non ce lo possiamo permettere'."},
+      {id:"area_successione",cat:"Successione",tipo:"scoperta",requires:{areaOpen:"successione"},tags:["successione","eredità"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["impl_passaggio","disc_avviamento"],rivela:["eta_eredi"],
+       origin:"Nuova area: il passaggio",testo:"Ha mai messo nero su bianco chi continuerà, e come?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Mai. È una di quelle cose che si rimandano sempre."},
+      {id:"area_salute",cat:"Salute",tipo:"scoperta",requires:{areaOpen:"salute"},tags:["salute","fragilità"],emotion:"paura",deepens:"paura",spawns:["impl_salute","disc_fragilita"],rivela:["problema_salute"],
+       origin:"Nuova area: la salute",testo:"Mi accennava a un problema recente. Cosa è successo?",eff:{fiducia:3,apertura:2,pressione:0},reply:"Mi sono fermato qualche settimana. Mi ha aperto gli occhi su quanto sono indispensabile, in senso brutto."},
+      {id:"sell_polizza",cat:"Vendita",tipo:"vendita",requires:{opening:true},tags:["protezione"],emotion:null,spawns:[],
+       origin:"Chiudere subito",testo:"Le ho già preparato la polizza perfetta: firmiamo oggi?",eff:{fiducia:-8,apertura:-3,pressione:18},reply:"Eh no, aspetti. Corre troppo. Non mi piace essere spinto."}
+    ]
+  },
+
+  professionista:{
+    registro:"colto",
+    statBase:{fiducia:48,apertura:42,pressione:14,consapevolezza:8},
+    visibili:["Cliente da {anniCliente} anni","Libero professionista","Reddito elevato ma variabile"],
+    identita:()=>({coniuge:null, f1:null, anniCliente:pick([2,3,4]), eta:pick([39,41,44,46]), mestiere:pick(["architetto","avvocato","consulente"])}),
+    NEED_AREA:{previdenza:"previdenza",protezione_reddito:"protezione",investimento_liquidita:"patrimonio",ottimizzazione_fiscale:"fiscale",protezione_salute:"salute"},
+    THEMES:{lavoro:["lavoro","reddito","autonomia"],pensione:["pensione","futuro"],patrimonio:["liquidità","patrimonio"],protezione:["protezione","continuità"],fiscale:["fisco","tasse"],salute:["salute"]},
+    INFO:{
+      reddito_variabile:{categoria:"Reddito",livello:1,temi:["reddito"],bisogni:["protezione_reddito","previdenza"]},
+      dipendenza_lavoro:{categoria:"Lavoro",livello:2,temi:["lavoro"],bisogni:["protezione_reddito"]},
+      no_previdenza:{categoria:"Previdenza",livello:2,temi:["pensione"],bisogni:["previdenza"]},
+      liquidita:{categoria:"Patrimonio",livello:2,temi:["liquidità"],bisogni:["investimento_liquidita"]},
+      orizzonte_lungo:{categoria:"Obiettivi",livello:3,temi:["futuro"],bisogni:["previdenza"]},
+      carico_fiscale:{categoria:"Fisco",livello:2,temi:["fisco"],bisogni:["ottimizzazione_fiscale"]},
+      reddito_alto:{categoria:"Reddito",livello:1,temi:["reddito"],bisogni:["ottimizzazione_fiscale","investimento_liquidita"]}
+    },
+    INFO_TESTO:{
+      reddito_variabile:"Reddito alto ma irregolare: mesi pieni e mesi vuoti.",
+      dipendenza_lavoro:"Tutto il fatturato dipende dalle sue prestazioni personali.",
+      no_previdenza:"Nessuna previdenza integrativa: solo la cassa professionale.",
+      liquidita:"Liquidità importante ferma sul conto, gestita 'a sensazione'.",
+      orizzonte_lungo:"Vuole smettere prima dei 60 ma non ha un piano per farlo.",
+      carico_fiscale:"Paga molte tasse e non ha mai ottimizzato nulla.",
+      reddito_alto:"Reddito medio elevato, ben sopra la media della categoria."
+    },
+    BISOGNI:{
+      previdenza:{insight:"Da ciò che mi racconta, al 'dopo' — quando rallenterà — finora non ha mai dato una forma: è un pezzo di futuro lasciato in bianco.",label:"Previdenza integrativa",requisiti:[["no_previdenza"],["orizzonte_lungo","reddito_variabile"]],propostaIdeale:"p_pip",trappole:[]},
+      protezione_reddito:{insight:"Da ciò che mi racconta, mi colpisce come tutto — casa, famiglia, l'attività — poggi su un'unica spalla: la sua.",label:"Protezione del reddito",requisiti:[["dipendenza_lavoro"]],propostaIdeale:"p_protez",trappole:[]},
+      investimento_liquidita:{consap:CONSAP_LIQUIDITA,insight:"Da ciò che mi dice, quei soldi fermi sul conto non sono una scelta tranquilla: con l'inflazione, in silenzio, ogni anno valgono un po' meno.",label:"Investimento liquidità",requisiti:[["liquidita"]],propostaIdeale:"p_gest",trappole:["p_unico"]},
+      ottimizzazione_fiscale:{insight:"Da ciò che mi racconta, una parte di ciò che produce se ne va ogni anno in modo evitabile: non è un tecnicismo, è capitale suo che non resta suo.",label:"Ottimizzazione fiscale",requisiti:[["carico_fiscale"]],propostaIdeale:"p_fisco",trappole:[]}
+    },
+    PROPOSTE:{
+      p_pip:{bisogno:"previdenza",nome:"Piano previdenziale a deduzione",desc:"Versamenti flessibili ed efficienti sul reddito variabile.",pert:92},
+      p_protez:{bisogno:"protezione_reddito",nome:"Protezione del reddito professionale",desc:"Indennità se non può lavorare.",pert:90},
+      p_gest:{bisogno:"investimento_liquidita",nome:"Gestione bilanciata",desc:"Liquidità messa a lavorare con metodo.",pert:88},
+      p_unico:{bisogno:"investimento_liquidita",nome:"Singolo titolo 'caldo'",desc:"Tutto su una scommessa di moda.",pert:25},
+      p_fisco:{bisogno:"ottimizzazione_fiscale",nome:"Pianificazione fiscale integrata",desc:"Strumenti deducibili che riducono il carico e costruiscono capitale.",pert:90}
+    },
+    DOMANDE:[
+      {id:"rel_apri",cat:"Relazione",tipo:"relazione",requires:{opening:true},tags:["lavoro"],emotion:null,spawns:["fu_redd","fu_studio"],
+       testo:"Come sta andando lo studio in questo periodo?",eff:{fiducia:3,apertura:4,pressione:0},reply:"Bene, fin troppo lavoro. Ma è altalenante: mesi ottimi e mesi morti."},
+      {id:"rel_obiettivi",cat:"Obiettivi",tipo:"relazione",requires:{opening:true},tags:["futuro"],emotion:null,spawns:["fu_smettere"],
+       testo:"Quando immagina di rallentare, un domani?",eff:{fiducia:3,apertura:4,pressione:0},reply:"Vorrei smettere presto, prima dei sessanta. Come, ancora non lo so."},
+      {id:"fu_redd",cat:"Reddito",tipo:"scoperta",requires:{asked:["rel_apri"]},tags:["reddito","autonomia"],emotion:null,spawns:["fu_dip"],rivela:["reddito_variabile"],
+       origin:"Ha detto 'altalenante'",testo:"Quanto è regolare, alla fine dell'anno, quello che entra?",eff:{fiducia:2,apertura:3,pressione:0},reply:"Poco regolare. Alto in media, ma a singhiozzo."},
+      {id:"fu_dip",cat:"Lavoro",tipo:"scoperta",requires:{asked:["fu_redd"]},tags:["lavoro","autonomia","continuità"],emotion:null,spawns:["prot_impl"],rivela:["dipendenza_lavoro"],
+       origin:"Sul reddito da prestazione",testo:"Se per un periodo non potesse lavorare, lo studio produrrebbe lo stesso?",eff:{fiducia:2,apertura:2,pressione:0},reply:"No. Se mi fermo io, si ferma tutto. È un limite che conosco."},
+      {id:"fu_studio",cat:"Reddito",tipo:"scoperta",requires:{asked:["rel_apri"]},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_impl"],rivela:["liquidita"],
+       origin:"Lo studio va bene",testo:"E quello che resta, dopo le spese, dove finisce?",eff:{fiducia:2,apertura:3,pressione:0},reply:"Sul conto, fermo. Ci guardo ogni tanto e muovo qualcosa a sensazione."},
+      {id:"fu_smettere",cat:"Previdenza",tipo:"scoperta",requires:{asked:["rel_obiettivi"]},tags:["pensione","futuro"],emotion:null,spawns:["prev_impl"],rivela:["no_previdenza","orizzonte_lungo"],
+       origin:"Vuole smettere presto",testo:"Per arrivarci, ha costruito qualcosa oltre alla cassa professionale?",eff:{fiducia:2,apertura:2,pressione:0},reply:"No, niente di strutturato. Conto sul lavoro finché reggo."},
+      {id:"disc_fisco",cat:"Fisco",tipo:"scoperta",requires:{opening:true},tags:["fisco","tasse"],emotion:"preoccupazione",deepens:"preoccupazione",spawns:["fisc_impl"],rivela:["carico_fiscale","reddito_alto"],
+       origin:"Il tema tasse",testo:"Con un reddito come il suo, quanto le pesa il carico fiscale a fine anno?",eff:{fiducia:2,apertura:3,pressione:0},reply:"Tantissimo. Verso cifre che mi fanno male, e non ho mai ottimizzato niente."},
+      {id:"prev_impl",cat:"Previdenza",tipo:"implicazione",target:"previdenza",requires:{need:"previdenza"},tags:["pensione","futuro"],emotion:"preoccupazione",deepens:"preoccupazione",consapBase:24,spawns:[],
+       origin:"Vuole smettere senza piano",testo:"Smettere a sessanta con la sola cassa significa un taglio netto al tenore di vita. I conti tornano?",eff:{fiducia:3,apertura:1,pressione:0},reply:"...Messa così, no. Non li ho mai fatti davvero, quei conti."},
+      {id:"prot_impl",cat:"Protezione",tipo:"implicazione",target:"protezione_reddito",requires:{need:"protezione_reddito"},tags:["lavoro","continuità"],emotion:"preoccupazione",consapBase:24,spawns:[],
+       origin:"Tutto dipende da lei",testo:"Sei mesi di stop forzato: il reddito sparisce, ma le spese fisse no. Come regge?",eff:{fiducia:3,apertura:1,pressione:0},reply:"Intaccherei i risparmi. Non avevo inquadrato il rischio così."},
+      {id:"inv_impl",cat:"Investimenti",tipo:"implicazione",target:"investimento_liquidita",requires:{info:["liquidita"],need:"investimento_liquidita"},tags:["liquidità","futuro"],emotion:null,consapBase:18,spawns:[],
+       origin:"Liquidità gestita a sensazione",testo:"Quella liquidità ferma, in termini reali, ogni anno perde col costo della vita. Anche non decidere è una decisione.",eff:{fiducia:2,apertura:1,pressione:0},reply:"Vero. È pigrizia mascherata da prudenza, lo ammetto."},
+      {id:"fisc_impl",cat:"Fisco",tipo:"implicazione",target:"ottimizzazione_fiscale",requires:{need:"ottimizzazione_fiscale"},tags:["fisco","futuro"],emotion:null,consapBase:24,spawns:[],
+       origin:"Paga molto e non ottimizza",testo:"Una parte di ciò che versa in tasse, con gli strumenti giusti, diventerebbe capitale suo. Ogni anno che passa è perso.",eff:{fiducia:3,apertura:1,pressione:0},reply:"Lo sospettavo. Detta con i numeri, è quasi fastidioso non averci pensato prima."},
+      {id:"ponte_lavoro_previdenza",tipo:"ponte",cat:"Ponte",from:"lavoro",opens:"previdenza",requires:{saturo:"lavoro",needNot:"previdenza"},tags:["lavoro","pensione","futuro"],emotion:null,spawns:["area_previdenza"],
+       framing:"Tutto il suo reddito nasce dalla sua attività personale, e nulla è messo al riparo per dopo.",testo:"Vorrei collegare le due cose: quando l'attività rallenterà, con cosa vivrà?",reply:"...Domanda giusta. Non ho una risposta pronta.",eff:{fiducia:2,apertura:1,pressione:1}},
+      {id:"ponte_lavoro_protezione",tipo:"ponte",cat:"Ponte",from:"lavoro",opens:"protezione",requires:{saturo:"lavoro",needNot:"protezione_reddito"},tags:["lavoro","protezione","continuità"],emotion:"preoccupazione",spawns:["area_protezione"],
+       framing:"Se tutto dipende dalle sue ore, c'è un rischio che di solito si ignora.",testo:"Cosa succederebbe al reddito se, per salute, dovesse fermarsi a lungo?",reply:"Sparirebbe. Non l'ho mai affrontato davvero.",eff:{fiducia:2,apertura:1,pressione:0}},
+      {id:"ponte_patr_fiscale",tipo:"ponte",cat:"Ponte",from:"patrimonio",opens:"fiscale",requires:{saturo:"patrimonio",needNot:"ottimizzazione_fiscale"},tags:["liquidità","fisco"],emotion:null,spawns:["area_fiscale"],
+       framing:"Mette da parte molto, ma una parte se ne va in tasse evitabili.",testo:"Mi lasci collegare patrimonio e fisco: quanto di ciò che accumula, ogni anno, lo perde col carico fiscale?",reply:"Troppo, temo. Non l'ho mai messo in fila così.",eff:{fiducia:2,apertura:1,pressione:0}},
+      {id:"area_previdenza",cat:"Previdenza",tipo:"scoperta",requires:{areaOpen:"previdenza"},tags:["pensione","futuro"],emotion:null,spawns:["prev_impl"],rivela:["no_previdenza","orizzonte_lungo"],
+       origin:"Nuova area: la previdenza",testo:"Oltre alla cassa, esiste un piano per il dopo?",eff:{fiducia:2,apertura:2,pressione:0},reply:"No. È il classico 'ci penserò'."},
+      {id:"area_protezione",cat:"Protezione",tipo:"scoperta",requires:{areaOpen:"protezione"},tags:["protezione","continuità"],emotion:null,spawns:["prot_impl"],rivela:["dipendenza_lavoro"],
+       origin:"Nuova area: la protezione",testo:"Se lei si fermasse sei mesi, lo studio produrrebbe lo stesso?",eff:{fiducia:2,apertura:2,pressione:0},reply:"No. Tutto fermo. Lo so, ed è scomodo da dire."},
+      {id:"area_patrimonio",cat:"Patrimonio",tipo:"scoperta",requires:{areaOpen:"patrimonio"},tags:["liquidità","patrimonio"],emotion:null,spawns:["inv_impl"],rivela:["liquidita"],
+       origin:"Nuova area: il patrimonio",testo:"Quella liquidità ferma: con quale criterio la gestisce?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Nessun criterio, lo confesso. Sta lì."},
+      {id:"area_fiscale",cat:"Fisco",tipo:"scoperta",requires:{areaOpen:"fiscale"},tags:["fisco","tasse"],emotion:null,spawns:["fisc_impl"],rivela:["carico_fiscale","reddito_alto"],
+       origin:"Nuova area: il fisco",testo:"Ha mai usato strumenti per ridurre legalmente quel carico?",eff:{fiducia:2,apertura:2,pressione:0},reply:"Mai. Pago e basta, brontolando."},
+      {id:"sell_titolo",cat:"Vendita",tipo:"vendita",requires:{opening:true},tags:["liquidità"],emotion:null,spawns:[],
+       origin:"Piazzare un prodotto",testo:"Le faccio sottoscrivere subito un titolo che sta correndo, rende parecchio.",eff:{fiducia:-7,apertura:-2,pressione:14},reply:"Lei mi sta vendendo qualcosa. Da un consulente mi aspetto metodo, non una scommessa."}
+    ]
+  }
+};
+
+// SCENARI: il problema. Selezionano bisogni (con priorità/critico), info attive,
+// ponti attivi, e portano un nucleo emotivo (paura dominante).
+const SCENARI = {
+  // --- commerciante ---
+  comm_declino:{catalogo:"commerciante",label:"Bottega in declino",
+    paura:"Lasciare la famiglia scoperta se l'attività si ferma.",
+    bisogni:{protezione_reddito:{peso:40,critico:true},investimento_liquidita:{peso:20},previdenza:{peso:15}},
+    info:["attivita","famiglia","calo_vendite","paura_famiglia","liquidita","no_previdenza"],
+    ponti:["ponte_fam_protezione","ponte_att_protezione","ponte_att_patrimonio"]},
+  comm_figli:{catalogo:"commerciante",label:"Prosperità e figli",
+    paura:"Non dare ai figli le occasioni che lui non ha avuto.",
+    bisogni:{risparmio_figli:{peso:40,critico:true},investimento_liquidita:{peso:30},previdenza:{peso:15}},
+    info:["attivita","famiglia","futuro_figli","liquidita","valore_avviamento"],
+    ponti:["ponte_fam_figli","ponte_att_patrimonio"]},
+  comm_successione:{catalogo:"commerciante",label:"Senza successione",
+    paura:"Che il lavoro di una vita si dissolva nel nulla.",
+    bisogni:{passaggio_generazionale:{peso:40,critico:true},investimento_liquidita:{peso:20},protezione_reddito:{peso:20}},
+    info:["attivita","eta_eredi","valore_avviamento","famiglia","liquidita","paura_famiglia"],
+    ponti:["ponte_att_successione","ponte_att_patrimonio","ponte_att_protezione"]},
+  comm_salute:{catalogo:"commerciante",label:"Dopo lo spavento",
+    paura:"La propria fragilità e cosa ne sarebbe della famiglia.",
+    bisogni:{protezione_salute:{peso:40,critico:true},previdenza:{peso:25},protezione_reddito:{peso:20}},
+    info:["attivita","problema_salute","fragilita","famiglia","no_previdenza","paura_famiglia"],
+    ponti:["ponte_salute_protezione","ponte_salute_previdenza"]},
+  // --- professionista ---
+  prof_previdenza:{catalogo:"professionista",label:"Il dopo non pianificato",
+    paura:"Un futuro senza il tenore di vita di oggi.",
+    bisogni:{previdenza:{peso:40,critico:true},investimento_liquidita:{peso:25},protezione_reddito:{peso:15}},
+    info:["reddito_variabile","no_previdenza","orizzonte_lungo","liquidita","dipendenza_lavoro"],
+    ponti:["ponte_lavoro_previdenza"]},
+  prof_protezione:{catalogo:"professionista",label:"Tutto su di sé",
+    paura:"Che basti un imprevisto a far crollare il reddito.",
+    bisogni:{protezione_reddito:{peso:40,critico:true},investimento_liquidita:{peso:25},previdenza:{peso:15}},
+    info:["reddito_variabile","dipendenza_lavoro","liquidita","no_previdenza"],
+    ponti:["ponte_lavoro_protezione","ponte_lavoro_previdenza"]},
+  prof_liquidita:{catalogo:"professionista",label:"Capitale fermo",
+    paura:"Vedere erodere ciò che ha faticato ad accumulare.",
+    bisogni:{investimento_liquidita:{peso:40,critico:true},ottimizzazione_fiscale:{peso:25},previdenza:{peso:15}},
+    info:["reddito_alto","liquidita","carico_fiscale","no_previdenza"],
+    ponti:["ponte_patr_fiscale","ponte_lavoro_previdenza"]},
+  prof_fiscale:{catalogo:"professionista",label:"Il peso delle tasse",
+    paura:"Lavorare tanto e vedersene portar via troppo.",
+    bisogni:{ottimizzazione_fiscale:{peso:40,critico:true},investimento_liquidita:{peso:25},previdenza:{peso:15}},
+    info:["carico_fiscale","reddito_alto","liquidita","no_previdenza"],
+    ponti:["ponte_patr_fiscale","ponte_lavoro_previdenza"]}
+};
+
+// Strato NARRATIVO degli scenari: indizi visibili in apertura (la situazione, non la
+// diagnosi), anagrafica coerente con la storia, e battuta d'apertura del cliente.
+const SCENA = {
+  comm_declino:{eta:[48,50,52],anni:[6,7,8],
+    visibili:["Cliente da {anniCliente} anni","Bottega di quartiere aperta da oltre trent'anni","Manda avanti il negozio quasi da solo","Si parla di tempi più duri di una volta"],
+    apertura:"Eccomi. Le dico la verità: è un periodo in cui il negozio mi dà più pensieri che soddisfazioni."},
+  comm_figli:{eta:[46,48,50],anni:[5,6,7],
+    visibili:["Cliente da {anniCliente} anni","Attività commerciale avviata e in salute","Due figli adolescenti, {f1} e {f2}","Comincia a guardare al loro futuro"],
+    apertura:"Buongiorno. Sa, ultimamente più che a me penso a dove arriveranno i ragazzi."},
+  comm_successione:{eta:[57,59,61],anni:[9,11,13],
+    visibili:["Cliente da {anniCliente} anni","Quasi quarant'anni dietro lo stesso bancone","Si avvicina alla pensione","In famiglia nessuno sembra pronto a raccogliere il testimone"],
+    apertura:"Mi dica pure. Anche se, arrivato alla mia età, certe domande ho già cominciato a farmele da solo."},
+  comm_salute:{eta:[50,53,56],anni:[7,8,9],
+    visibili:["Cliente da {anniCliente} anni","Attività commerciale di famiglia","Reduce da un problema di salute","Si è dovuto fermare per qualche settimana"],
+    apertura:"Buongiorno. Da quella brutta storia di salute, le confesso, ho qualche pensiero in più del solito."},
+  prof_previdenza:{eta:[44,46,48],anni:[3,4],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere})","Reddito elevato ma irregolare","Vorrebbe rallentare prima dei sessanta"],
+    apertura:"Buongiorno. Le sarò sincero: lavoro tanto, ma ho iniziato a chiedermi fino a quando potrò reggere questi ritmi."},
+  prof_protezione:{eta:[38,40,42],anni:[2,3],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere})","Tutto il reddito dipende dalle sue prestazioni","Nessuna rete di sicurezza alle spalle"],
+    apertura:"Buongiorno. Lo studio gira bene, però è tutto sulle mie spalle — e ogni tanto la cosa mi pesa."},
+  prof_liquidita:{eta:[41,44,47],anni:[3,4],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere}) ad alto reddito","Mette da parte molto, ma senza un criterio preciso"],
+    apertura:"Buongiorno. Guadagno bene, e qualcosa da parte riesco a metterlo. Resta lì, sul conto. Se sto facendo la scelta giusta, però, non saprei dirlo."},
+  prof_fiscale:{eta:[43,46,49],anni:[2,3],
+    visibili:["Cliente da {anniCliente} anni","Libero professionista ({mestiere}) ad alto reddito","Sente di versare troppo al fisco"],
+    apertura:"Buongiorno. Le dico subito il mio cruccio: pago tasse che mi sembrano enormi, e non so se sia inevitabile."}
+};
+
+// ARCHETIPO = ricetta: paniere di scenari + distribuzione di personalità.
+const ARCHETIPI = [
+  {id:"commerciante", nome:"Commerciante storico", catalogo:"commerciante", difficolta:2,
+   desc:"Bottega di famiglia. Quattro storie possibili: declino, prosperità, successione, un problema di salute.",
+   scenari:["comm_declino","comm_figli","comm_successione","comm_salute"],
+   personalita:[["storico","orgoglioso","ottimista"],["orgoglioso","ansioso"],["riservato","diffidente"],["ottimista","sbrigativo"]]},
+  {id:"professionista", nome:"Professionista", catalogo:"professionista", difficolta:3,
+   desc:"Reddito alto e irregolare. Quattro problemi: previdenza, protezione, liquidità ferma, peso fiscale.",
+   scenari:["prof_previdenza","prof_protezione","prof_liquidita","prof_fiscale"],
+   personalita:[["razionale","sbrigativo"],["razionale","diffidente","riservato"],["ansioso","razionale"],["orgoglioso","razionale"]]}
+];
+
+function fill(str, id){ if(str==null) return str; return str.replace(/\{(\w+)\}/g,(m,k)=> ( id[k]!=null? id[k] : m)); }
+
+function generaCliente(archId){
+  const A = ARCHETIPI.find(a=>a.id===archId);
+  const C = CATALOGHI[A.catalogo];
+  const scenKey = pick(A.scenari);
+  const scen = SCENARI[scenKey];
+  const nar = SCENA[scenKey] || {};
+  const prof = pick(A.personalita);
+  const id = C.identita();
+  if(nar.eta) id.eta = pick(nar.eta);
+  if(nar.anni) id.anniCliente = pick(nar.anni);
+  // reazioni + stat dalla personalità campionata
+  const reaz = {emp:1,ins:1,rifor:1,prematura:1,soglia:3,minimizza:1,relazione:1};
+  const stat = {...C.statBase};
+  prof.forEach(t=>{const T=TRATTI[t]; if(!T)return;
+    for(const k in (T.stat||{})) stat[k]=(stat[k]||0)+T.stat[k];
+    reaz.emp*=T.emp; reaz.ins*=T.ins; reaz.rifor*=T.rifor; reaz.prematura*=T.prematura; reaz.soglia+=T.soglia;
+    if(T.minimizza) reaz.minimizza*=T.minimizza; if(T.relazione) reaz.relazione*=T.relazione;
+  });
+  for(const k in stat) stat[k]=clamp(stat[k]);
+  const voce = voceDi(prof);
+  // insiemi attivi dallo scenario
+  const activeNeeds = scen.bisogni;
+  const activeInfo = new Set(scen.info);
+  const activePonti = new Set(scen.ponti);
+  const activeAreas = new Set(Object.keys(activeNeeds).map(n=>C.NEED_AREA[n]));
+  // bisogni filtrati con priorità di scenario
+  const BISOGNI={}, ORDINE=[];
+  Object.keys(activeNeeds).forEach(nid=>{ const b=C.BISOGNI[nid]; if(!b)return;
+    BISOGNI[nid]={label:b.label, insight:b.insight, consap:b.consap, requisiti:b.requisiti, propostaIdeale:b.propostaIdeale, trappole:b.trappole||[], peso:activeNeeds[nid].peso, critico:!!activeNeeds[nid].critico};
+    ORDINE.push(nid);
+  });
+  // info filtrate (testo da INFO_TESTO con slot)
+  const INFO={}; activeInfo.forEach(i=>{ if(C.INFO[i]) INFO[i]={...C.INFO[i], testo:fill(C.INFO_TESTO[i],id)}; });
+  // proposte dei bisogni attivi
+  const PROPOSTE={}; for(const pid in C.PROPOSTE){ if(activeNeeds[C.PROPOSTE[pid].bisogno]) PROPOSTE[pid]={...C.PROPOSTE[pid]}; }
+  // domande filtrate per scenario
+  const DOMANDE = C.DOMANDE.filter(q=>{
+    if(q.tipo==="ponte") return activePonti.has(q.id);
+    if(q.rivela && q.rivela.some(i=>!activeInfo.has(i))) return false;
+    if(q.target && !activeNeeds[q.target]) return false;
+    const r=q.requires||{};
+    if(r.need && !activeNeeds[r.need]) return false;
+    if(r.info && r.info.some(i=>!activeInfo.has(i))) return false;
+    if(r.areaOpen && !activeAreas.has(r.areaOpen)) return false;
+    return true;
+  }).map(q=>{
+    let reply=q.reply; const pool=VARIANTI[q.id];
+    if(pool){ const v=variante(pool,voce); if(v) reply=v; }
+    return {...q, testo:fill(q.testo,id), reply:fill(reply,id), framing:fill(q.framing,id)};
+  });
+  const nome = A.catalogo==="commerciante"? pick(["Antonio Greco","Salvatore Russo","Nicola De Luca","Pietro Amato"]) : pick(["Elena Ferraro","Marco Bianchi","Chiara Neri","Davide Conti"]);
+  return {
+    archetipo:A.id, catalogo:A.catalogo, scenario:scen.label, paura:scen.paura, nome, difficolta:A.difficolta,
+    registro:C.registro, voce, sogliaConsap:SOGLIA_CONSAP,
+    tratti:prof, reazioni:reaz, statBase:stat, identita:id, visibili:(nar.visibili||C.visibili).map(v=>fill(v,id)),
+    apertura:fill(nar.apertura||"Eccomi. Ho poco tempo, ma mi dica pure.",id),
+    INFO, BISOGNI, ORDINE, PROPOSTE, DOMANDE, THEMES:C.THEMES, NEED_AREA:C.NEED_AREA,
+    riga:`${id.eta} anni · ${id.mestiere}${id.f1?` · genitore`:""}`
+  };
+}
+
+/* ============================================================
+   V9 — MACCHINA A FASI (stato-centrico)
+   Non si valuta il fare domande, ma l'accompagnare il cliente:
+   fidarsi → raccontarsi → comprendere → prendere posizione → agire.
+   ============================================================ */
+const SOGLIA_AVANZA = 68;
+const FASI = [
+  {id:1,nome:"Armonizzazione",breve:"crea relazione"},
+  {id:2,nome:"Esplorazione",breve:"comprendi il cliente"},
+  {id:3,nome:"Consapevolezza",breve:"genera consapevolezza"},
+  {id:4,nome:"Presa di posizione",breve:"fai riconoscere i bisogni"},
+  {id:5,nome:"Soluzione",breve:"proponi una risposta"}
+];
+// MODELLO DI ADERENZA: ogni fase ha mosse centrali, ammesse e una mossa-innesco (trigger)
+const FASE_CENTRALI={1:["relazione","empatia","osservazione"],2:["scoperta","riformulazione","ponte"],3:["consapevolezza","insight","implicazione","empatia","osservazione"],4:["emersione"],5:["proposta"]};
+const FASE_AMMESSE ={1:["riformulazione"],2:["relazione","empatia","osservazione"],3:["riformulazione","ponte"],4:["insight","empatia","riformulazione","ponte"],5:["empatia","riformulazione","insight"]};
+const AVANZA={1:["scoperta"],2:["implicazione","insight","consapevolezza"],3:["emersione"],4:["proposta"]}; // mosse che fanno avanzare di fase
+const NAT={relazione:1,empatia:1,osservazione:1,riformulazione:2,scoperta:2,ponte:2,implicazione:3,insight:3,consapevolezza:3,emersione:4,proposta:5,vendita:9};
+function isTrigger(fam,fase){return (AVANZA[fase]||[]).includes(fam);}
+function fitOf(fam,fase){
+  if((FASE_CENTRALI[fase]||[]).includes(fam))return"centrale";
+  if((FASE_AMMESSE[fase]||[]).includes(fam))return"ammessa";
+  if(isTrigger(fam,fase))return"trigger";
+  return (NAT[fam]||fase)>fase?"avanti":"indietro";
+}
+function famNode(q){return ({scoperta:"scoperta",relazione:"relazione",implicazione:"implicazione",ponte:"ponte",vendita:"vendita"})[q.tipo]||"scoperta";}
+
+/* ---- stato ---- */
+let CL,S;
+function initFasi(cliente){
+  CL=cliente;
+  S={fase:1,prontezza:0,
+     fiducia:CL.statBase.fiducia,apertura:CL.statBase.apertura,pressione:CL.statBase.pressione,consapevolezza:CL.statBase.consapevolezza,
+     padronanza:50,coerenzaConv:50,
+     discovered:new Set(),areaOpened:new Set(),
+     used:new Set(),history:[],need:{},priorityNeed:null,
+     coperti:new Set(),consapProg:{},consapUsate:{},mosseTot:0};
+  CL.ORDINE.forEach(n=>S.need[n]="latente");
+  S.ledger={};[1,2,3,4,5].forEach(f=>S.ledger[f]={turni:0,centrali:0,fuori:0,regr:0});
+}
+const ILLUM=["illuminato","riconosciuto","prioritizzato","coperto"];
+const RICON=["riconosciuto","prioritizzato","coperto"];
+function dom(id){return CL.DOMANDE.find(x=>x.id===id);}
+function lastQ(){for(let i=S.history.length-1;i>=0;i--){if(S.history[i].q)return S.history[i].q;}return null;}
+function recentTags(){const s=new Set();S.history.slice(-2).forEach(h=>(h.tags||[]).forEach(t=>s.add(t)));return s;}
+function sogliaF1(){let f=60,a=50,p=24;if(CL.tratti.includes("diffidente")){f+=12;a+=8;}if(CL.tratti.includes("riservato"))a+=6;if(CL.tratti.includes("ansioso"))p-=4;return{f,a,p};}
+function themeDepth(t){const tg=CL.THEMES[t]||[];return S.history.filter(h=>(h.tags||[]).some(x=>tg.includes(x))).length;}
+function saturo(t){return themeDepth(t)>=2;}
+function recompute(){const fr=[];CL.ORDINE.forEach(n=>{if(S.need[n]!=="latente")return;if(CL.BISOGNI[n].requisiti.every(g=>g.some(i=>S.discovered.has(i)))){S.need[n]="emerso";fr.push(n);}});return fr;}
+function connTarget(){ // un bisogno 'emerso' con substrato da illuminare
+  let best=null,bn=0;
+  for(const n of CL.ORDINE){if(S.need[n]!=="emerso")continue;const c=[...S.discovered].filter(i=>(CL.INFO[i].bisogni||[]).includes(n)).length;if(c>bn){bn=c;best=n;}}
+  return best;
+}
+function prontezza(){
+  const f=S.fase;
+  if(f===1){const s=sogliaF1();const r=Math.min(S.fiducia/s.f,S.apertura/s.a);const pen=S.pressione>s.p?(S.pressione-s.p)*2:0;return clamp(r*100-pen);}
+  if(f===2){const em=CL.ORDINE.filter(n=>S.need[n]!=="latente").length;return clamp(em*30+(connTarget()?22:0)+Math.min(S.discovered.size,5)*7);}
+  if(f===3){const il=CL.ORDINE.filter(n=>ILLUM.includes(S.need[n]));const crit=il.some(n=>CL.BISOGNI[n].critico);if(crit)return clamp(62+(S.consapevolezza/CL.sogliaConsap)*38);return clamp((S.consapevolezza/CL.sogliaConsap)*45+il.length*14);}
+  if(f===4){const ric=CL.ORDINE.filter(n=>RICON.includes(S.need[n])).length;return clamp(ric*45+(S.priorityNeed?45:0));}
+  return 100;
+}
+function reqMet(r){if(!r)return true;if(r.opening)return true;if(r.info&&!r.info.every(i=>S.discovered.has(i)))return false;if(r.asked&&!r.asked.every(a=>S.used.has(a)))return false;if(r.need&&!(S.need[r.need]&&S.need[r.need]!=="latente"))return false;if(r.apertura&&S.apertura<r.apertura)return false;if(r.areaOpen&&!S.areaOpened.has(r.areaOpen))return false;if(r.saturo&&!saturo(r.saturo))return false;if(r.needNot&&S.need[r.needNot]&&S.need[r.needNot]!=="latente")return false;return true;}
+function frontier(){return CL.DOMANDE.filter(q=>!S.used.has(q.id)&&reqMet(q.requires));}
+
+/* ---- mosse disponibili (operatori) ---- */
+function mosse(){
+  const out=[];
+  frontier().forEach(q=>{ if(q.tipo==="implicazione" && CL.BISOGNI[q.target] && CL.BISOGNI[q.target].consap) return; out.push({k:"q:"+q.id,fam:famNode(q),node:q,label:q.testo,badge:q.cat,tipo:q.tipo}); });
+  // CONSAPEVOLEZZA (Fase 3): mosse generate dal contenuto del bisogno, finché è 'emerso'
+  CL.ORDINE.forEach(n=>{ const C=CL.BISOGNI[n].consap; if(!C) return; if(S.need[n]!=="emerso") return;
+    ["osservazione","curiosita","proiezione","contrasto","implicazione"].forEach(sub=>{
+      out.push({k:"k:"+sub+":"+n,fam:"consapevolezza",sub,target:n,label:C[sub],badge:sub,tipo:"consapevolezza"}); }); });
+  if(S.history.length){
+    const lq=lastQ();
+    if(lq){
+      const opts=restOptions();
+      const r=opts.find(o=>o.tipo==="riformulazione");if(r)out.push({k:"r:rifor",fam:"riformulazione",rest:r,label:r.testo,badge:"riformulazione",tipo:"restituzione"});
+      const e=opts.find(o=>o.tipo==="empatia");if(e)out.push({k:"r:emp",fam:"empatia",rest:e,label:e.testo,badge:"empatia",tipo:"restituzione"});
+      out.push({k:"r:oss",fam:"osservazione",rest:{tipo:"osservazione",testo:pick(["Noto che su questo punto cambia tono.","Mi accorgo che questo tema la tocca più di altri.","Vedo che qui rallenta, come se pesasse."])},label:"(osservazione) "+"Noto un cambiamento mentre ne parla.",badge:"osservazione",tipo:"restituzione"});
+      const tgt=connTarget();
+      const ins=opts.find(o=>o.tipo==="insight");
+      if(ins)out.push({k:"r:ins",fam:"insight",rest:ins,label:ins.testo,badge:"insight",tipo:"restituzione",target:tgt});
+    }
+  }
+  // emersione (Fase 4)
+  const illum=CL.ORDINE.filter(n=>S.need[n]==="illuminato");
+  if(illum.length) out.push({k:"e:sintesi",fam:"emersione",emers:"sintesi",label:"Riepiloghi ciò che è emerso e lo specchi al cliente.",badge:"sintesi bisogni",tipo:"emersione"});
+  const ricon=CL.ORDINE.filter(n=>RICON.includes(S.need[n]));
+  if(ricon.length && !S.priorityNeed) out.push({k:"e:posizione",fam:"emersione",emers:"posizione",label:"«Se potesse occuparsi di una cosa sola, adesso, quale sarebbe?»",badge:"presa di posizione",tipo:"emersione"});
+  // proposte (Fase 5) — solo per bisogni riconosciuti
+  const perProp=CL.ORDINE.filter(n=>RICON.includes(S.need[n])&&!S.coperti.has(n));
+  perProp.forEach(n=>{Object.entries(CL.PROPOSTE).filter(([pid,p])=>p.bisogno===n).forEach(([pid,p])=>{
+    out.push({k:"p:"+pid,fam:"proposta",prop:pid,bisogno:n,label:"Proponi: "+p.nome,badge:"proposta",tipo:"proposta"});
+  });});
+  return out;
+}
+
+/* ---- testi restituzione (riuso) ---- */
+const REST_TESTO={
+  riformulazione:{
+    default:["Se ho capito bene, per lei questo conta più di quanto sembri.","Quindi, se la seguo, qui c'è in gioco molto più di un dettaglio."],
+    attività:["Se ho capito bene, quell'attività per lei è molto più di un lavoro.","Quindi quel negozio, per lei, non è solo lavoro: è la sua vita."],
+    figli:["Quindi, in fondo, tutto ruota attorno al futuro dei suoi figli."],
+    pensione:["Quindi al 'dopo' finora non ha mai dato una forma."],
+    liquidità:["Mi par di capire che quei soldi fermi siano più un peso che una scelta."],
+    lavoro:["Se la seguo, tutto quello che costruisce passa solo dalle sue mani."]
+  },
+  empatia:{
+    nostalgia:["Immagino cosa significhi portare avanti ciò che le è stato lasciato."],
+    orgoglio:["Si sente il valore di ciò che ha costruito con le sue mani."],
+    paura:["Capisco che sia un pensiero che pesa, e che non sia facile dirlo."],
+    preoccupazione:["Sento che questa cosa la tiene in tensione più di quanto dica."],
+    default:["Immagino che per lei non sia un tema da poco."]
+  },
+  insight:{default:["Da ciò che mi dice emerge un collegamento che vale la pena guardare insieme."]}
+};
+function restOptions(){
+  const last=lastQ();if(!last)return[];
+  const tag=(last.tags||[]).find(t=>REST_TESTO.riformulazione[t])||"default";
+  const opts=[{tipo:"riformulazione",testo:pick(REST_TESTO.riformulazione[tag]||REST_TESTO.riformulazione.default)}];
+  const emo=last.emotion;
+  opts.push({tipo:"empatia",testo:pick((emo&&REST_TESTO.empatia[emo])?REST_TESTO.empatia[emo]:REST_TESTO.empatia.default),emo});
+  const tgt=connTarget();
+  if(tgt)opts.push({tipo:"insight",testo:(CL.BISOGNI[tgt].insight||`Da ciò che mi racconta, tutto questo si lega a ${CL.BISOGNI[tgt].label.toLowerCase()}.`),target:tgt});
+  else opts.push({tipo:"insight",testo:pick(REST_TESTO.insight.default),target:null});
+  return opts;
+}
+
+/* ---- emozioni / cue ---- */
+function emotionState(){
+  if(S.pressione>=55)return"Irritato";if(S.pressione>=32)return"Diffidente";
+  if(S.consapevolezza>=28&&S.fase>=3)return"Interessato";
+  if(S.fiducia>=65&&S.apertura>=52&&S.pressione<=20)return"Coinvolto";
+  if(S.fiducia>=55&&S.pressione<=22)return"Sereno";return"Prudente";}
+const EMO_COLOR={Sereno:"#0f766e",Prudente:"#64748b",Interessato:"#2563eb",Coinvolto:"#7c3aed",Diffidente:"#b45309",Irritato:"#dc2626"};
+const EMO_BG={Sereno:"#e7f3f1",Prudente:"#eef2f6",Interessato:"#e7f0fb",Coinvolto:"#f0eafb",Diffidente:"#fbf0e3",Irritato:"#fbeaea"};
+const CUES={Coinvolto:["si sporge in avanti","annuisce con convinzione"],Interessato:["inclina la testa, incuriosito"],Sereno:["annuisce tranquillo"],Prudente:["misura le parole"],Diffidente:["incrocia le braccia"],Irritato:["sospira, guarda l'orologio"]};
+const ANS_CUES={nostalgia:["lo sguardo si perde lontano"],orgoglio:["si raddrizza, fiero"],paura:["abbassa la voce"],preoccupazione:["una ruga sulla fronte"]};
+
+/* ============================================================
+   PLAY — operatore unico sullo stato
+   ============================================================ */
+let convoEl;
+function addMsg(kind,html){const d=document.createElement("div");d.className="msg "+kind;d.innerHTML=html;convoEl.appendChild(d);convoEl.scrollTop=convoEl.scrollHeight;}
+function fn(){return CL.nome.split(" ")[0];}
+
+function play(m){
+  S.mosseTot++;
+  const fam=m.fam;
+  // avanzamento guidato: solo la mossa-innesco della fase, con prontezza sufficiente
+  let avanzato=null;
+  const illumExists=CL.ORDINE.some(n=>S.need[n]==="illuminato"||RICON.includes(S.need[n]));
+  if(isTrigger(fam,S.fase) && prontezza()>=SOGLIA_AVANZA && (fam!=="proposta"||S.priorityNeed) && (fam!=="emersione"||illumExists)){ S.fase=S.fase+1; avanzato=S.fase; }
+  const fit=fitOf(fam,S.fase);
+  S.ledger[S.fase].turni++;
+  if(fit==="centrale")S.ledger[S.fase].centrali++;
+  if(fit==="avanti"||fit==="trigger")S.ledger[S.fase].fuori++;
+
+  if(m.tipo==="restituzione") return playRest(m,fit);
+  if(m.tipo==="emersione") return playEmersione(m,fit,avanzato);
+  if(m.tipo==="proposta") return playProposta(m,fit,avanzato);
+  if(m.tipo==="consapevolezza") return playConsap(m,fit,avanzato);
+  return playDomanda(m,fit,avanzato);
+}
+
+function bandFeedback(avanzato,fit,extra){
+  if(avanzato){addMsg("sys ok",`→ Sei passato alla <b>Fase ${avanzato} · ${FASI[avanzato-1].nome}</b>.`);}
+  if(extra)addMsg(extra.cls,extra.txt);
+}
+function clamps(){["fiducia","apertura","pressione","consapevolezza","padronanza","coerenzaConv"].forEach(k=>S[k]=clamp(S[k]));}
+
+function playDomanda(m,fit,avanzato){
+  const q=m.node; S.used.add(q.id);
+  const eff={...(q.eff||{})};
+  // regressione: scoperta quando fase>=3
+  let nota=null;
+  if(m.fam==="scoperta" && S.fase>=3){
+    const legit = (q.rivela||[]).some(i=>!S.discovered.has(i));
+    if(legit){ S.ledger[S.fase].regr++; S.padronanza+=2; nota={cls:"sys thread",txt:`↩ Rientri un attimo in Esplorazione sull'area appena aperta: è una regressione legittima.`}; }
+    else { S.coerenzaConv-=6; S.pressione+=3; S.padronanza-=2; S.ledger[S.fase].fuori++; nota={cls:"sys bad",txt:`Stai raccogliendo dati in fase di Consapevolezza: «questo me l'ha già detto». La consapevolezza non cresce così.`}; }
+  }
+  // fuori fase in avanti / innesco prematuro (prontezza insufficiente)
+  if(fit==="avanti"||fit==="trigger"){
+    const dist=Math.max(1,(NAT[m.fam]||S.fase)-S.fase);
+    S.pressione+=4*dist; S.fiducia-=2*dist; S.padronanza-=3+dist;
+    nota={cls:"sys bad",txt:`Mossa fuori fase (anticipata di ${dist}): in ${FASI[S.fase-1].nome} è troppo presto. ${fn()} si irrigidisce.`};
+  }else if(fit==="centrale"){S.padronanza+=3;}
+  // applica effetti (smorzati se fuori fase)
+  const mult=(fit==="avanti"||fit==="trigger")?0.4:1;
+  if((q.tipo==="relazione"||q.tipo==="scoperta")&&eff.fiducia>0)eff.fiducia*=CL.reazioni.relazione;
+  S.fiducia+=(eff.fiducia||0)*mult; S.apertura+=(eff.apertura||0)*mult; S.pressione+=(eff.pressione||0);
+  if(q.tipo==="ponte"){S.areaOpened.add(q.opens);}
+  (q.rivela||[]).forEach(i=>S.discovered.add(i));
+  const fresh=recompute();
+  let illuminated=null;
+  if(q.tipo==="implicazione"&&S.need[q.target]==="emerso"){const g=(q.target.indexOf("protezione")===0)?CL.reazioni.minimizza:1;S.consapevolezza+=Math.round(q.consapBase*g);S.need[q.target]="illuminato";illuminated=q.target;}
+  // continuità
+  const rt=recentTags();const cont=(q.tags||[]).some(t=>rt.has(t));S.coerenzaConv+=cont?2:(fit==="centrale"?0:-2);
+  S.history.push({q,tags:q.tags||[],emotion:q.emotion,fit});
+  clamps();
+  // render messaggi
+  const myText=q.tipo==="ponte"?`<span style="opacity:.85">${q.framing}</span><br><br>${q.testo}`:q.testo;
+  addMsg("me",`<div class="txt">${myText}</div>`);
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${q.reply}</div>`);
+  const st=emotionState();const cue=q.emotion&&ANS_CUES[q.emotion]?pick(ANS_CUES[q.emotion]):pick(CUES[st]||CUES.Prudente);
+  addMsg("cue",`${fn()} ${cue}.`);
+  bandFeedback(avanzato,fit,nota);
+  (q.rivela||[]).forEach(i=>{if(S.discovered.has(i))addMsg("sys",`Scoperto: ${CL.INFO[i].testo}`);});
+  fresh.forEach(i=>addMsg("sys need",`★ Area di attenzione emersa: <b>${CL.BISOGNI[i].label}</b>.`));
+  if(illuminated)addMsg("sys need",`↑ Consapevolezza generata su <b>${CL.BISOGNI[illuminated].label}</b>.`);
+  if(q.tipo==="vendita")addMsg("sys bad",`Spinta di vendita: brucia la fiducia.`);
+  postTurn();
+}
+
+function playRest(m,fit){
+  const o=m.rest, r=CL.reazioni;
+  addMsg("me rest",`<div class="txt">${o.testo}</div>`);
+  // fit di contesto (oltre alla fase)
+  let causa=null;
+  if(o.tipo==="empatia"&&!CHARGED.includes((lastQ()||{}).emotion))causa="empatia_neutra";
+  if(o.tipo==="insight"&&!o.target)causa="insight_vuoto";
+  const fuoriFase=(fit==="avanti"||fit==="indietro");
+  if(causa||fuoriFase){
+    S.fiducia-=3*r.prematura;S.apertura-=2;S.pressione+=4*r.prematura;S.padronanza-=3;
+    const linea=causa?reazioneArtificiale(causa,CL.tratti):pick(["Mi sembra che stia correndo.","Aspetti, non così in fretta."]);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${linea}</div>`);
+    addMsg("cue",`${fn()} ${pick(CUES.Diffidente)}.`);
+    if(fuoriFase&&!causa)addMsg("sys bad",`Restituzione fuori fase: in ${FASI[S.fase-1].nome} non è il momento.`);
+  } else {
+    if(o.tipo==="riformulazione"){S.fiducia+=4*r.rifor*r.relazione;S.apertura+=4*r.rifor;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("riformulazione")}</div>`);}
+    else if(o.tipo==="empatia"){S.fiducia+=5*r.emp;S.apertura+=4*r.emp;S.pressione-=3*r.emp;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("empatia")}</div>`);}
+    else if(o.tipo==="osservazione"){S.fiducia+=3;S.apertura+=3;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["...Sì. È vero, non me ne rendevo conto.","Eh. Si vede tanto?"])}</div>`);}
+    else if(o.tipo==="insight"){const g=Math.round(12*r.ins);S.consapevolezza+=g;const t=o.target;if(t&&S.need[t]==="emerso"){S.need[t]="illuminato";const area=CL.NEED_AREA[t];if(area&&!S.areaOpened.has(area)){S.areaOpened.add(area);addMsg("sys thread",`La tua sintesi apre una nuova area: <b>${CL.BISOGNI[t].label}</b>.`);}addMsg("sys need",`↑ Hai reso consapevole <b>${CL.BISOGNI[t].label}</b> (+${g}).`);}S.fiducia+=2;addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${accetta("insight")}</div>`);}
+    S.coerenzaConv+=3; if(fit==="centrale")S.padronanza+=3;
+    addMsg("cue",`${fn()} ${pick(CUES.Coinvolto.concat(CUES.Interessato))}.`);
+  }
+  S.history.push({rest:o.tipo,tags:(lastQ()||{}).tags||[],emotion:(lastQ()||{}).emotion,fit});
+  clamps();postTurn();
+}
+
+function playEmersione(m,fit,avanzato){
+  if(fit==="avanti"){ // prematuro
+    S.pressione+=8;S.fiducia-=3;S.padronanza-=4;
+    addMsg("me",`<div class="txt">${m.label}</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Aspetti, di cosa stiamo parlando esattamente?","Mi sta mettendo fretta su cose che non ho ancora messo a fuoco."])}</div>`);
+    addMsg("sys bad",`Emersione prematura: il cliente non ha ancora «visto» abbastanza.`);
+    S.history.push({tags:[],emotion:null,fit});clamps();postTurn();return;
+  }
+  if(m.emers==="sintesi"){
+    const ill=CL.ORDINE.filter(n=>S.need[n]==="illuminato");
+    ill.forEach(n=>S.need[n]="riconosciuto");
+    const labels=CL.ORDINE.filter(n=>RICON.includes(S.need[n])).map(n=>CL.BISOGNI[n].label.toLowerCase());
+    addMsg("me",`<div class="txt">Mettiamo in fila ciò che è emerso: ${labels.join(", ")}. Sono cose che la riguardano da vicino.</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["...Sì. Detta così, sono cose mie. Non le avevo mai messe in fila.","Eh. Riconosco che è proprio la mia situazione."])}</div>`);
+    addMsg("sys need",`I bisogni illuminati diventano <b>riconosciuti</b> dal cliente.`);
+    S.padronanza+= (fit==="centrale")?4:0; S.consapevolezza+=4;
+  } else { // presa di posizione
+    const cand=CL.ORDINE.filter(n=>RICON.includes(S.need[n]));
+    const crit=cand.find(n=>CL.BISOGNI[n].critico)||cand.sort((a,b)=>CL.BISOGNI[b].peso-CL.BISOGNI[a].peso)[0];
+    S.priorityNeed=crit; if(crit)S.need[crit]="prioritizzato";
+    addMsg("me",`<div class="txt">${m.label}</div>`);
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${crit?`${pick(["Questo, senza dubbio:","Se devo scegliere,"])} ${CL.BISOGNI[crit].label.toLowerCase()}. ${CL.paura}`:"Non saprei da dove iniziare."}</div>`);
+    addMsg("cue",`${fn()} ${pick(["prende posizione, con fermezza","abbassa lo sguardo, poi annuisce deciso"])}.`);
+    if(crit)addMsg("sys need",`Il cliente prende posizione: <b>${CL.BISOGNI[crit].label}</b> è la priorità.`);
+    S.padronanza+=(fit==="centrale")?5:0; S.fiducia+=3;
+  }
+  S.history.push({tags:[],emotion:null,fit});bandFeedback(avanzato,fit,null);clamps();postTurn();
+}
+
+function playProposta(m,fit,avanzato){
+  const p=CL.PROPOSTE[m.prop], n=m.bisogno;
+  addMsg("me",`<div class="txt">Per ${CL.BISOGNI[n].label.toLowerCase()}, le propongo: ${p.nome}. ${p.desc}</div>`);
+  const riconosciuto=RICON.includes(S.need[n]);
+  if(!riconosciuto){
+    S.pressione+=10;S.fiducia-=4;S.padronanza-=4;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">Ma di questo non abbiamo nemmeno parlato davvero. Mi sembra una proposta a freddo.</div>`);
+    addMsg("sys bad",`Proposta per un bisogno non riconosciuto: salta la presa di posizione.`);
+  } else if(p.pert<55){
+    S.pressione+=6;S.padronanza-=3;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Non mi pare la cosa più adatta a me.","Mah, non la sento giusta per la mia situazione."])}</div>`);
+    addMsg("sys bad",`Soluzione poco pertinente al profilo (pertinenza ${p.pert}).`);
+  } else {
+    S.coperti.add(n);S.need[n]="coperto";S.fiducia+=4;S.padronanza+=4;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Questa sì che risponde a quello che le ho detto. Mi interessa.","Ecco, così ha senso. Procediamo a capirla meglio."])}</div>`);
+    addMsg("sys need",`<b>${CL.BISOGNI[n].label}</b> trova una risposta pertinente (pertinenza ${p.pert}).`);
+  }
+  S.history.push({tags:[],emotion:null,fit,prop:m.prop,bisogno:n,pert:p.pert,riconosciuto});
+  bandFeedback(avanzato,fit,null);clamps();postTurn();
+}
+
+function qualitaConsap(sub){
+  const base={osservazione:52,curiosita:70,proiezione:66,contrasto:58,implicazione:60}[sub];
+  let q=base+(S.fiducia-50)*0.30+(S.apertura-50)*0.30+(Math.random()*24-12);
+  const SH={
+    diffidente:{implicazione:-16,contrasto:-10,proiezione:-4,curiosita:-3},
+    razionale:{implicazione:-8,curiosita:6,contrasto:2,proiezione:-3},
+    ansioso:{proiezione:10,implicazione:-8,contrasto:-3},
+    ottimista:{osservazione:-6,curiosita:-6,proiezione:-6,contrasto:-6,implicazione:-6},
+    orgoglioso:{contrasto:-10,curiosita:3},
+    sbrigativo:{proiezione:-10,curiosita:5,osservazione:-3},
+    riservato:{curiosita:-3,osservazione:-2,proiezione:-2},
+    storico:{contrasto:-5,proiezione:3}
+  };
+  (CL.tratti||[]).forEach(tr=>{const sh=SH[tr];if(sh&&sh[sub]!=null)q+=sh[sub];});
+  return q;
+}
+function esitoConsap(sub,n){
+  if(S.need[n]!=="emerso") return "ripetuto";
+  const q=qualitaConsap(sub);
+  const minim=(CL.reazioni.minimizza>1)||CL.tratti.includes("ottimista");
+  const arg=CL.tratti.includes("diffidente")||CL.tratti.includes("razionale")||CL.tratti.includes("orgoglioso");
+  if(q>=70) return "piena";
+  if(q>=50) return (minim&&(sub==="implicazione"||sub==="contrasto")&&Math.random()<0.4)?"minimizza":"parziale";
+  if(q>=34) return minim?"minimizza":"resiste";
+  return arg?"controarg":"resiste";
+}
+function playConsap(m,fit,avanzato){
+  const n=m.target, sub=m.sub, C=CL.BISOGNI[n].consap;
+  addMsg("me",`<div class="txt">${C[sub]}</div>`);
+  if(fit==="avanti"||fit==="trigger"){
+    const dist=Math.max(1,3-S.fase);
+    S.pressione+=5+dist*2; S.fiducia-=2; S.padronanza-=3;
+    addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(["Aspetti, non stiamo correndo un po'?","Mi sta già tirando le somme, ma non le ho ancora raccontato tutto."])}</div>`);
+    addMsg("cue",`${fn()} ${pick(CUES.Diffidente)}.`);
+    addMsg("sys bad",`Consapevolezza fuori tempo: porti a una conclusione prima di aver esplorato.`);
+    S.history.push({consap:sub,target:n,tags:[],fit}); clamps(); postTurn(); return;
+  }
+  const esito=esitoConsap(sub,n);
+  const PRGpiena={osservazione:30,curiosita:50,proiezione:46,contrasto:42,implicazione:44};
+  const PADpiena={osservazione:3,curiosita:7,proiezione:6,contrasto:4,implicazione:2};
+  const PADparz ={osservazione:2,curiosita:3,proiezione:3,contrasto:2,implicazione:1};
+  const PRESS_SUB={osservazione:0,curiosita:0,proiezione:1,contrasto:4,implicazione:7};
+  let dprog={piena:PRGpiena[sub],parziale:24,resiste:8,minimizza:3,controarg:0,ripetuto:0}[esito];
+  let dpad ={piena:PADpiena[sub],parziale:PADparz[sub],resiste:-1,minimizza:-1,controarg:-3,ripetuto:-2}[esito];
+  let dpress=PRESS_SUB[sub];
+  if(esito==="controarg") dpress+=3+PRESS_SUB[sub];
+  else if(esito==="resiste") dpress+=2;
+  else if(esito==="minimizza") dpress+=1;
+  S.consapUsate[n]=S.consapUsate[n]||[];
+  if(sub==="implicazione" && !S.consapUsate[n].some(x=>x!=="implicazione")){
+    dpad-=2; addMsg("sys bad",`Hai detto la conclusione invece di farla scoprire: in Consapevolezza la stoccata diretta costa.`);
+  }
+  S.consapUsate[n].push(sub);
+  S.consapProg[n]=(S.consapProg[n]||0)+dprog;
+  S.consapevolezza+=Math.round(dprog*0.45);
+  S.pressione+=dpress; S.padronanza+=dpad;
+  if(esito==="piena"&&(sub==="curiosita"||sub==="proiezione"))S.apertura+=3;
+  if(esito==="minimizza")S.apertura-=2; if(esito==="controarg")S.apertura-=1;
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${pick(C.reazioni[esito]||C.reazioni.parziale)}</div>`);
+  const cueMap={piena:"Coinvolto",parziale:"Interessato",resiste:"Prudente",minimizza:"Prudente",controarg:"Diffidente",ripetuto:"Prudente"};
+  addMsg("cue",`${fn()} ${pick(CUES[cueMap[esito]]||CUES.Prudente)}.`);
+  if(S.need[n]==="emerso" && S.consapProg[n]>=55){S.need[n]="illuminato";addMsg("sys need",`↑ <b>${CL.BISOGNI[n].label}</b>: il cliente ne ha preso coscienza.`);}
+  else if(S.need[n]==="emerso"){addMsg("sys",`(Presa di coscienza in costruzione su ${CL.BISOGNI[n].label.toLowerCase()}: ${Math.min(99,Math.round(S.consapProg[n]))}%.)`);}
+  const lab={piena:"Piena presa di coscienza",parziale:"Consapevolezza parziale",resiste:"Resiste",minimizza:"Minimizza",controarg:"Controargomenta",ripetuto:"Già acquisito"}[esito];
+  addMsg("sys",`${sub} · ${lab}`);
+  S.history.push({consap:sub,target:n,esito,tags:[],fit});
+  clamps(); bandFeedback(avanzato,fit,null); postTurn();
+}
+
+function postTurn(){
+  S.prontezza=prontezza();
+  renderTop();renderDossier();renderMosse();
+  setStatus();
+  if(S.mosseTot>=26)addMsg("sys",`(Il tempo del colloquio è quasi finito.)`);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function setStatus(){const e=emotionState();$("emo").textContent=e;$("emo").style.color=EMO_COLOR[e];$("emo").style.background=EMO_BG[e];}
+function renderTop(){
+  $("moves").innerHTML=`Mosse <b>${S.mosseTot}</b>`;
+  const d=[["Fiducia","fiducia","--c-fiducia"],["Apertura","apertura","--c-apertura"],["Pressione","pressione","--c-pressione"],["Consap.","consapevolezza","--c-consap"]];
+  $("strip").innerHTML=d.map(([l,k,c])=>`<div class="chip"><div class="h">${l}<b>${Math.round(S[k])}</b></div><div class="bar"><i style="width:${S[k]}%;background:var(${c})"></i></div></div>`).join("");
+  // stepper fasi
+  const step=FASI.map(f=>`<div class="fstep ${f.id===S.fase?'on':(f.id<S.fase?'done':'')}"><span class="fn">${f.id}</span><span class="fl">${f.nome}</span></div>`).join('<span class="farrow">›</span>');
+  const pr=Math.round(S.prontezza);
+  const ready=pr>=SOGLIA_AVANZA && S.fase<5;
+  $("phasebar").innerHTML=`<div class="fsteps">${step}</div>
+    <div class="prontezza"><div class="pl">Prontezza · ${FASI[S.fase-1].breve}</div><div class="pbar"><i style="width:${pr}%;background:${ready?'#0f766e':'#94a3b8'}"></i></div>${ready?'<div class="pready">Pronto per la fase successiva</div>':''}</div>
+    <div class="pmastery">Padronanza del Metodo: <b>${Math.round(S.padronanza)}</b></div>`;
+}
+function renderDossier(){
+  const vis=CL.visibili.map(t=>`<div class="item">${t}</div>`).join("");
+  const sco=S.discovered.size?[...S.discovered].map(i=>`<div class="item">${CL.INFO[i].testo}</div>`).join(""):`<div class="empty">Nessuna ancora.</div>`;
+  const STAGE={latente:"",emerso:'<span class="tag disc">emerso</span>',illuminato:'<span class="tag illum">illuminato</span>',riconosciuto:'<span class="tag ric">riconosciuto</span>',prioritizzato:'<span class="tag pri">priorità</span>',coperto:'<span class="tag cov">coperto</span>'};
+  let bis="";CL.ORDINE.forEach(n=>{const st=S.need[n];if(st==="latente"){bis+=`<div class="need locked"><span>??? — non emerso</span></div>`;return;}let t=(CL.BISOGNI[n].critico?'<span class="tag crit">critico</span>':'')+STAGE[st];bis+=`<div class="need"><span>${CL.BISOGNI[n].label}</span><span class="tags">${t}</span></div>`;});
+  $("dossier").innerHTML=`<div class="group"><h4>Visibili</h4>${vis}</div><div class="group"><h4>Scoperte</h4>${sco}</div><div class="group"><h4>Bisogni</h4>${bis}</div>`;
+}
+function renderMosse(){
+  const ms=mosse();
+  const buckets={infase:[],avanza:[],fuori:[]};
+  ms.forEach(m=>{const fit=fitOf(m.fam,S.fase);
+    if(isTrigger(m.fam,S.fase))buckets.avanza.push({m,fit:"trigger"});
+    else if(fit==="centrale"||fit==="ammessa")buckets.infase.push({m,fit});
+    else buckets.fuori.push({m,fit});});
+  const card=(o)=>{const m=o.m;const cls=o.fit==="trigger"?"avanza":(o.fit==="centrale"?"centrale":(o.fit==="ammessa"?"ammessa":"fuori"));
+    return `<button class="q ${cls}" data-k="${m.k}"><div class="badges"><span class="b cat">${m.badge}</span><span class="b ${m.tipo}">${m.tipo}</span></div><div class="qtext">${m.label}</div></button>`;};
+  let h="";
+  if(buckets.infase.length)h+=`<div class="qsec"><div class="qsec-label p1">● In questa fase — ${FASI[S.fase-1].nome}</div><div class="q-list">${buckets.infase.map(card).join("")}</div></div>`;
+  if(buckets.avanza.length)h+=`<div class="qsec"><div class="qsec-label pb">● Per passare alla fase successiva ${S.prontezza>=SOGLIA_AVANZA?'— sei pronto':'— attento al tempismo'}</div><div class="q-list">${buckets.avanza.map(card).join("")}</div></div>`;
+  if(buckets.fuori.length)h+=`<div class="qsec"><div class="qsec-label p3">● Sconsigliate ora</div><div class="q-list">${buckets.fuori.map(card).join("")}</div></div>`;
+  h+=`<button class="btn ghost" id="concludi" style="margin-top:6px">Concludi il colloquio →</button>`;
+  $("qarea").innerHTML=h;
+  $("qarea").querySelectorAll("button.q[data-k]").forEach(b=>b.onclick=()=>{const m=mosse().find(x=>x.k===b.dataset.k);if(m)play(m);});
+  $("concludi").onclick=debrief;
+}
+
+/* ============================================================
+   DEBRIEF orientato agli errori di fase
+   ============================================================ */
+function debrief(){
+  const crit=CL.ORDINE.find(n=>CL.BISOGNI[n].critico);
+  const critCoperto=S.need[crit]==="coperto";
+  const critRic=RICON.includes(S.need[crit]);
+  const coperti=CL.ORDINE.filter(n=>S.need[n]==="coperto");
+  const fuoriTot=[1,2,3,4,5].reduce((a,f)=>a+S.ledger[f].fuori,0);
+  const regrTot=[1,2,3,4,5].reduce((a,f)=>a+S.ledger[f].regr,0);
+  let esito,kind;
+  if(S.pressione>=70||S.fiducia<=20){esito="Cliente perso";kind="bad";}
+  else if(!coperti.length){esito=critRic?"Appuntamento successivo":"Nessun accordo";kind=critRic?"warn":"muted";}
+  else if(critCoperto&&S.padronanza>=70&&S.pressione<=22&&S.priorityNeed){esito="Cliente Promotore";kind="good";}
+  else if(critCoperto&&S.padronanza>=55){esito="Cliente Fidelizzato";kind="good";}
+  else if(coperti.length>=2){esito="Cross Selling";kind="good";}
+  else{esito="Vendita";kind="good";}
+  const col={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)",muted:"var(--muted)"}[kind];
+  const bg={good:"#e7f3f1",warn:"#fbf0e3",bad:"#fbeaea",muted:"#eef2f6"}[kind];
+
+  const fb=[];
+  fb.push([fuoriTot===0?"good":"bad","Disciplina di fase",fuoriTot===0?"Nessuna mossa fuori fase: hai rispettato il percorso.":`${fuoriTot} mosse fuori fase. Il metodo si impara col tempismo, non con le mosse giuste fatte al momento sbagliato.`]);
+  fb.push([regrTot>0?"good":"tip","Regressioni",regrTot>0?`${regrTot} ritorni legittimi a esplorare aree appena aperte: buona consulenza.`:"Nessuna regressione: va bene se il percorso è filato, ma non temere di tornare indietro quando emerge qualcosa di nuovo."]);
+  if(critCoperto)fb.push(["good","Bisogno critico",`${CL.BISOGNI[crit].label}: riconosciuto dal cliente e coperto con una risposta pertinente.`]);
+  else if(critRic)fb.push(["tip","Bisogno critico",`${CL.BISOGNI[crit].label} era riconosciuto, ma non gli hai dato una risposta.`]);
+  else if(S.need[crit]==="illuminato")fb.push(["bad","Bisogno critico",`Avevi illuminato ${CL.BISOGNI[crit].label.toLowerCase()}, ma il cliente non è arrivato a prenderne posizione (Fase 4 mancata).`]);
+  else fb.push(["bad","Bisogno critico",`${CL.BISOGNI[crit].label} non è mai diventato consapevole.`]);
+  if(!S.priorityNeed)fb.push(["bad","Presa di posizione","Il cliente non ha mai preso posizione su ciò che conta di più: la consulenza è rimasta in superficie."]);
+  if(S.fase<3)fb.push(["bad","Percorso interrotto","Ti sei fermato troppo presto: non hai accompagnato il cliente fino alla consapevolezza."]);
+
+  const tempo=[1,2,3,4,5].map(f=>`<span style="display:inline-block;min-width:104px">${FASI[f-1].nome}: <b>${S.ledger[f].turni}</b></span>`).join("");
+  $("main").innerHTML=`
+    <div class="verdict"><span class="badge" style="color:${col};background:${bg}">Esito</span><h2 style="color:${col}">${esito}</h2>
+      <div class="sub">${CL.nome} · scenario: ${CL.scenario} · ${CL.tratti.join(", ")}</div>
+      <div class="sub" style="margin-top:3px;font-style:italic">Nucleo: ${CL.paura}</div></div>
+    <div class="hr"></div><h3 class="block">Padronanza del Metodo</h3>
+    <div class="db-stat"><div class="h">Padronanza<b>${Math.round(S.padronanza)}</b></div><div class="bar"><i style="width:${S.padronanza}%;background:#7c3aed"></i></div></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-top:10px">Tempo per fase — ${tempo}</div>
+    <div class="hr"></div><h3 class="block">Lettura del percorso</h3>
+    ${fb.map(([k,t,x])=>`<div class="fb ${k}"><div class="t">${t}</div>${x}</div>`).join("")}
+    <div class="fb tip" style="margin-top:6px"><div class="t">Principio</div>Non conta quante domande hai fatto, ma se hai accompagnato il cliente: fidarsi → raccontarsi → comprendere → prendere posizione → agire.</div>
+    <button class="btn primary" id="again" style="margin-top:18px">Nuovo cliente ↺</button>`;
+  $("again").onclick=intro;$("main").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ============================================================
+   INTRO / AVVIO
+   ============================================================ */
+function intro(){
+  $("strip").innerHTML="";$("moves").innerHTML="";$("dossier").innerHTML="";if($("phasebar"))$("phasebar").innerHTML="";
+  const cards=ARCHETIPI.map(a=>`<button class="arche" data-arch="${a.id}"><div class="an">${a.nome}<span class="diff">${[1,2,3,4,5].map(n=>`<i class="${n<=a.difficolta?'on':''}"></i>`).join("")}</span></div><div class="ad">${a.desc}</div><div class="traits"><span class="tr">${a.scenari.length} scenari</span><span class="tr">5 fasi consulenziali</span></div></button>`).join("");
+  $("main").innerHTML=`<div class="intro"><h2>Consulente Simulator · V9</h2>
+    <p class="lead">La V9 è costruita sulle <b>cinque fasi</b> di una consulenza reale: Armonizzazione → Esplorazione → Consapevolezza → Presa di posizione → Soluzione. Non si valuta il fare domande, ma la capacità di <b>accompagnare il cliente</b>: fidarsi → raccontarsi → comprendere → prendere posizione → agire. Ogni mossa ha un suo momento giusto; il tempismo è la competenza centrale.</p>
+    <div class="pick">${cards}</div>
+    <p class="hint">Vedrai sempre in quale fase sei e una barra di prontezza. Si avanza facendo la mossa giusta al momento giusto — non c'è un pulsante "avanza".</p></div>`;
+  $("main").querySelectorAll("button.arche").forEach(b=>b.onclick=()=>avvia(b.dataset.arch));
+}
+function avvia(archId){
+  const cliente=generaCliente(archId);initFasi(cliente);
+  $("main").innerHTML=`<div class="intro"><h2>${cliente.nome}</h2>
+    <div class="person"><div class="avatar">${cliente.nome.split(" ").map(w=>w[0]).join("").slice(0,2)}</div><div><div style="font-weight:700">${cliente.nome}</div><div style="font-size:12.5px;color:var(--muted)">${cliente.riga} · ${cliente.tratti.join(", ")}</div><div class="traits" style="margin-top:6px"><span class="tr">voce: ${cliente.voce}</span></div></div></div>
+    <div class="qsec-label p3">Appunti pre-incontro</div><ul class="vis">${cliente.visibili.map(v=>`<li>${v}</li>`).join("")}</ul>
+    <p class="hint">Difficoltà ${cliente.difficolta}/5. Inizia dall'Armonizzazione: prima la relazione, poi tutto il resto.</p>
+    <button class="btn primary" id="start" style="margin-top:14px">Inizia il colloquio →</button></div>`;
+  $("start").onclick=startConvo;
+}
+function startConvo(){
+  $("main").innerHTML=`<div id="phasebar" class="phasebar"></div><div id="convo"></div><div class="status"><span class="emo" id="emo"></span></div><div id="qarea"></div>`;
+  convoEl=$("convo");
+  addMsg("client",`<div class="who">${CL.nome}</div><div class="txt">${CL.apertura}</div>`);
+  S.prontezza=prontezza();renderTop();renderDossier();renderMosse();setStatus();
+}
+intro();
+</script>
+</body>
+</html>
