@@ -129,6 +129,7 @@
 
 <script>
 "use strict";
+const SALUTI={asciutto:["Buongiorno.","Salve."],cordiale:["Buongiorno, come va?","Buongiorno, piacere di rivederla.","Salve, come sta?","Buongiorno."]};
 const CONSAP_LIQUIDITA={
  osservazione:"Quindi, oggi, gran parte di ciò che mette da parte resta ferma lì, sul conto.",
  curiosita:"Le faccio una domanda, così ci ragioniamo insieme: secondo lei, quella cifra, fra dieci anni, comprerà le stesse cose di oggi?",
@@ -735,7 +736,7 @@ function generaCliente(archId){
     archetipo:A.id, catalogo:A.catalogo, scenario:scen.label, paura:scen.paura, nome, difficolta:A.difficolta,
     registro:C.registro, voce, sogliaConsap:SOGLIA_CONSAP,
     tratti:prof, reazioni:reaz, statBase:stat, identita:id, visibili:(nar.visibili||C.visibili).map(v=>fill(v,id)),
-    apertura:fill(nar.apertura||"Eccomi. Ho poco tempo, ma mi dica pure.",id),
+    apertura:pick(SALUTI[(prof.includes("diffidente")||prof.includes("riservato"))?"asciutto":"cordiale"]),
     INFO, BISOGNI, ORDINE, PROPOSTE, DOMANDE, THEMES:C.THEMES, NEED_AREA:C.NEED_AREA,
     riga:`${id.eta} anni · ${id.mestiere}${id.f1?` · genitore`:""}`
   };
